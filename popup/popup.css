@@ -1,0 +1,173 @@
+/* PrivacyShield Popup Styles (Claude / Anthropic Warm Minimal Theme) */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  width: 340px;
+  background: #FAF9F5;
+  color: #1F1E1D;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overflow: hidden;
+  user-select: none;
+}
+
+.popup-container {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.shield-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #D97757;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shield-icon svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+h2 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1F1E1D;
+  line-height: 1.2;
+}
+
+.subtext {
+  font-size: 11px;
+  color: #6E6D6A;
+}
+
+.badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+
+.badge.active {
+  background: #F3F1EC;
+  color: #3B7A57;
+  border: 1px solid #E5E3DD;
+}
+
+/* Status Card */
+.status-card {
+  background: #FFFFFF;
+  border: 1px solid #E5E3DD;
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.status-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+.label {
+  color: #6E6D6A;
+}
+
+.value {
+  color: #1F1E1D;
+  font-weight: 600;
+}
+
+.value.verified {
+  color: #3B7A57;
+}
+
+/* Actions */
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+button svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.primary-btn {
+  background: #D97757;
+  border: none;
+  color: #ffffff;
+}
+
+.primary-btn:hover {
+  background: #C86646;
+}
+
+.secondary-btn {
+  background: #FFFFFF;
+  border: 1px solid #E5E3DD;
+  color: #1F1E1D;
+}
+
+.secondary-btn:hover {
+  background: #F3F1EC;
+}
+
+/* Footer */
+.footer {
+  padding-top: 10px;
+  border-top: 1px solid #E5E3DD;
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #6E6D6A;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}

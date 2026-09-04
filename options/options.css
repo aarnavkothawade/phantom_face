@@ -1,0 +1,242 @@
+/* PrivacyShield Options Styles (Claude / Anthropic Warm Minimal Theme) */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #FAF9F5;
+  color: #1F1E1D;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  padding: 40px 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.options-container {
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #E5E3DD;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.shield-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #D97757;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shield-icon svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+h1 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1F1E1D;
+}
+
+.subtext {
+  font-size: 13px;
+  color: #6E6D6A;
+}
+
+.save-btn {
+  background: #D97757;
+  border: none;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 9px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.save-btn:hover {
+  background: #C86646;
+}
+
+/* Info Banner */
+.info-banner {
+  background: #F3F1EC;
+  border: 1px solid #E5E3DD;
+  border-radius: 8px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.info-icon {
+  font-size: 18px;
+}
+
+.info-text {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #3D3D3A;
+}
+
+.info-text code {
+  background: #E5E3DD;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #1F1E1D;
+  font-family: ui-monospace, monospace;
+}
+
+/* Section Cards */
+.section-card {
+  background: #FFFFFF;
+  border: 1px solid #E5E3DD;
+  border-radius: 12px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+h2 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1F1E1D;
+}
+
+.section-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #F3F1EC;
+  color: #6E6D6A;
+  border: 1px solid #E5E3DD;
+}
+
+.section-desc {
+  font-size: 13px;
+  color: #6E6D6A;
+  line-height: 1.4;
+}
+
+/* Forms */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group.full-width {
+  grid-column: span 2;
+}
+
+label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1F1E1D;
+}
+
+input {
+  background: #FFFFFF;
+  border: 1px solid #E5E3DD;
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: #1F1E1D;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+input:focus {
+  border-color: #D97757;
+}
+
+.input-with-action {
+  display: flex;
+  gap: 8px;
+}
+
+.input-with-action input {
+  flex: 1;
+}
+
+.test-btn {
+  background: #F3F1EC;
+  border: 1px solid #E5E3DD;
+  color: #1F1E1D;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 0 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.test-btn:hover {
+  background: #E5E3DD;
+}
+
+.status-msg {
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #1F1E1D;
+  color: #FFFFFF;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.25s ease;
+  pointer-events: none;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}

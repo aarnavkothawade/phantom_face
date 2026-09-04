@@ -1,0 +1,101 @@
+/* PrivacyShield - Floating Shield Action Button (FAB) & Animations (Warm Minimal Theme) */
+
+@keyframes ps-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Container Host */
+#privacyshield-root {
+  position: fixed !important;
+  bottom: 24px !important;
+  right: 24px !important;
+  z-index: 2147483647 !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* Floating Action Button (FAB) */
+.ps-fab-button {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #D97757;
+  border: 1px solid #C86646;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(31, 30, 29, 0.12);
+  transition: all 0.2s ease-in-out;
+  outline: none;
+  position: relative;
+  user-select: none;
+}
+
+.ps-fab-button:hover {
+  transform: translateY(-2px);
+  background: #C86646;
+  box-shadow: 0 6px 16px rgba(31, 30, 29, 0.16);
+}
+
+.ps-fab-button:active {
+  transform: translateY(0);
+}
+
+/* Shield Icon SVG inside FAB */
+.ps-shield-svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: #FFFFFF;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Live Badge on FAB */
+.ps-fab-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  background: #3B7A57;
+  color: #FFFFFF;
+  font-size: 9px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 8px;
+  border: 1px solid #FAF9F5;
+}
+
+/* Tooltip on FAB hover */
+.ps-fab-tooltip {
+  position: absolute;
+  right: 58px;
+  background: #FAF9F5;
+  color: #1F1E1D;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  border: 1px solid #E5E3DD;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(6px);
+  transition: all 0.2s ease;
+}
+
+.ps-fab-button:hover .ps-fab-tooltip {
+  opacity: 1;
+  transform: translateX(0);
+}

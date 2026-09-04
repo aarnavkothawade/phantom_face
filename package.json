@@ -1,0 +1,32 @@
+{
+  "name": "privacyshield-extension",
+  "version": "1.0.0",
+  "description": "PrivacyShield: A Privacy-Preserving Vision Agent for Chrome and Firefox (Manifest V3)",
+  "scripts": {
+    "generate-icons": "node generate-icons.js",
+    "test": "node test/evaluate.js",
+    "start-server": "node server/server.js"
+  },
+  "keywords": [
+    "privacy",
+    "vision-agent",
+    "chrome-extension",
+    "firefox-extension",
+    "manifest-v3",
+    "pii-redaction",
+    "sih"
+  ],
+  "author": "PrivacyShield Team",
+  "license": "MIT",
+  "dependencies": {
+    "@tensorflow-models/blazeface": "^0.1.0",
+    "@tensorflow/tfjs": "^4.22.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "tesseract.js": "^7.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}

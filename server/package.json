@@ -1,0 +1,24 @@
+{
+  "name": "privacyshield-proxy-server",
+  "version": "1.0.0",
+  "description": "Secure Proxy Server for PrivacyShield VLM Vision Agent (SIH Hackathon)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
+  },
+  "keywords": [
+    "privacy",
+    "proxy-server",
+    "vlm",
+    "open-weights",
+    "sih"
+  ],
+  "author": "PrivacyShield Team",
+  "license": "MIT"
+}

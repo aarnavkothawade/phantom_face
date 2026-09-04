@@ -1,0 +1,398 @@
+/* PrivacyShield - Inspection Panel & Telemetry UI (Claude / Anthropic Warm Minimal Theme) */
+
+.ps-panel {
+  position: fixed;
+  bottom: 84px;
+  right: 24px;
+  width: 420px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 110px);
+  background: #FAF9F5;
+  border: 1px solid #E5E3DD;
+  border-radius: 12px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.08);
+  color: #1F1E1D;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: ps-fade-in-up 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 2147483646;
+  box-sizing: border-box;
+}
+
+/* Header */
+.ps-header {
+  padding: 14px 20px;
+  background: #FAF9F5;
+  border-bottom: 1px solid #E5E3DD;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ps-header-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ps-header-title h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #1F1E1D;
+  letter-spacing: -0.01em;
+}
+
+.ps-version-pill {
+  background: #F3F1EC;
+  color: #6E6D6A;
+  border: 1px solid #E5E3DD;
+  border-radius: 12px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.ps-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ps-icon-btn {
+  background: transparent;
+  border: none;
+  color: #6E6D6A;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+
+.ps-icon-btn:hover {
+  background: #F3F1EC;
+  color: #1F1E1D;
+}
+
+/* Main Body Scrollable */
+.ps-body {
+  padding: 18px 20px;
+  overflow-y: auto;
+  max-height: calc(100vh - 270px);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Stage Progress Bar */
+.ps-progress-container {
+  background: #FFFFFF;
+  border: 1px solid #E5E3DD;
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ps-progress-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1F1E1D;
+}
+
+.ps-progress-track {
+  height: 4px;
+  background: #E5E3DD;
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.ps-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: #D97757;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.ps-stage-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ps-stage-badge {
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #F3F1EC;
+  border: 1px solid #E5E3DD;
+  color: #6E6D6A;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.ps-stage-badge.done {
+  border-color: #E5E3DD;
+  color: #3B7A57;
+  background: #F3F1EC;
+}
+
+.ps-stage-badge.active {
+  border-color: #D97757;
+  color: #1F1E1D;
+  background: #FFFFFF;
+  font-weight: 600;
+}
+
+/* Sanitized Summary Stats Row */
+.ps-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding: 12px 0;
+  border-top: 1px solid #E5E3DD;
+  border-bottom: 1px solid #E5E3DD;
+}
+
+.ps-stat-card {
+  background: transparent;
+  border: none;
+  text-align: center;
+}
+
+.ps-stat-value {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1F1E1D;
+}
+
+.ps-stat-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #6E6D6A;
+  margin-top: 2px;
+}
+
+/* Redacted Image Preview Box */
+.ps-preview-box {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #E5E3DD;
+  background: #FFFFFF;
+}
+
+.ps-preview-header {
+  padding: 8px 12px;
+  background: #F3F1EC;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 500;
+  color: #6E6D6A;
+  border-bottom: 1px solid #E5E3DD;
+}
+
+.ps-preview-img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  display: block;
+}
+
+/* Task Input Box */
+.ps-task-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ps-task-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1F1E1D;
+}
+
+.ps-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.ps-task-input {
+  flex: 1;
+  background: #FFFFFF;
+  border: 1px solid #E5E3DD;
+  border-radius: 8px;
+  padding: 9px 12px;
+  color: #1F1E1D;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.ps-task-input:focus {
+  border-color: #D97757;
+}
+
+.ps-go-btn {
+  background: #D97757;
+  border: none;
+  color: #FFFFFF;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 0 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.ps-go-btn:hover {
+  background: #C86646;
+}
+
+/* Agent Response / Action Result Card */
+.ps-result-card {
+  background: #FFFFFF;
+  border: 1px solid #E5E3DD;
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ps-result-header {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1F1E1D;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ps-result-content {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #3D3D3A;
+}
+
+.ps-action-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: #F3F1EC;
+  border: 1px solid #E5E3DD;
+  color: #1F1E1D;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Telemetry & Debug Collapsible Drawer */
+.ps-drawer {
+  border-top: 1px solid #E5E3DD;
+  background: #F3F1EC;
+  font-size: 11px;
+}
+
+.ps-drawer-header {
+  padding: 10px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  color: #6E6D6A;
+  font-weight: 500;
+}
+
+.ps-drawer-header:hover {
+  color: #1F1E1D;
+}
+
+.ps-drawer-body {
+  padding: 0 20px 14px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ps-waterfall-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ps-waterfall-name {
+  width: 130px;
+  color: #6E6D6A;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ps-waterfall-bar-track {
+  flex: 1;
+  height: 4px;
+  background: #E5E3DD;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.ps-waterfall-bar {
+  height: 100%;
+  background: #3D3D3A;
+  border-radius: 2px;
+}
+
+.ps-waterfall-val {
+  width: 50px;
+  text-align: right;
+  color: #1F1E1D;
+  font-weight: 600;
+}
+
+/* Toggle Controls in Footer */
+.ps-footer {
+  padding: 10px 20px;
+  border-top: 1px solid #E5E3DD;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #FAF9F5;
+}
+
+.ps-text-btn {
+  background: none;
+  border: none;
+  color: #D97757;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: color 0.15s ease;
+}
+
+.ps-text-btn:hover {
+  color: #C86646;
+}

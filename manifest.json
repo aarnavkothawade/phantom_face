@@ -1,0 +1,89 @@
+{
+  "manifest_version": 3,
+  "name": "PrivacyShield - Local Privacy-Preserving Vision Agent",
+  "version": "1.0.0",
+  "description": "Local privacy-preserving vision agent for Chrome and Firefox. Redacts PII, faces, and sensitive screen data locally before VLM inference.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "PrivacyShield Quick Status",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "config.js",
+        "lib/browser-polyfill.js",
+        "lib/pii/verhoeff.js",
+        "lib/pii/luhn.js",
+        "lib/pii/regex-rules.js",
+        "lib/pii/text-detector.js",
+        "lib/vision/tf.min.js",
+        "lib/vision/blazeface.min.js",
+        "lib/vision/face-detector.js",
+        "lib/vision/tesseract/tesseract.min.js",
+        "lib/vision/ocr-worker.js",
+        "lib/vision/screen-analyzer.js",
+        "lib/vision/screen-vit.js",
+        "lib/decision/local-decision-engine.js",
+        "lib/redactor/dom-redactor.js",
+        "lib/redactor/canvas-redactor.js",
+        "lib/executor/action-executor.js",
+        "lib/telemetry/instrumentation.js",
+        "content.js"
+      ],
+      "css": [
+        "styles/floating-shield.css",
+        "styles/panel.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "lib/pii/ner-worker.js",
+        "lib/vision/vision-worker.js",
+        "lib/vision/tesseract/*",
+        "icons/*",
+        "styles/*"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ],
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": true
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "privacyshield@isro-sih.org",
+      "strict_min_version": "109.0"
+    }
+  }
+}

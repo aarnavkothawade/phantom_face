@@ -254,6 +254,7 @@
   async function onOneButtonClick() {
     if (pipelineState.isScanning) return;
     pipelineState.isScanning = true;
+    stopDynamicFaceScanner();
 
     const panel = document.getElementById('ps-panel');
     const fab = document.querySelector('.ps-fab-button');
@@ -418,6 +419,7 @@
       taskInput.focus();
 
       pipelineState.isRedacted = true;
+      startDynamicFaceScanner();
     } catch (err) {
       console.error('[PrivacyShield] Error in pipeline execution:', err);
       updateProgress(0, `Error: ${err.message}`, 'badge-dom');
@@ -574,10 +576,143 @@
     }
   }
 
+  // Dynamic Face Scanning for Lazy-Loaded Thumbnails (e.g. YouTube, Infinite Scroll)
+  let dynamicFaceObserver = null;
+  let dynamicScrollTimer = null;
+  let dynamicallyScannedImages = new WeakSet();
+
+  function isElementInOrNearViewport(el) {
+    if (!el || typeof el.getBoundingClientRect !== 'function') return false;
+    const rect = el.getBoundingClientRect();
+    const windowHeight = window.innerHeight || document.documentElement.clientHeight;
+    const windowWidth = window.innerWidth || document.documentElement.clientWidth;
+    return (
+      rect.bottom >= -300 &&
+      rect.top <= windowHeight + 300 &&
+      rect.right >= -300 &&
+      rect.left <= windowWidth + 300
+    );
+  }
+
+  async function scanAndRedactSingleImage(img) {
+    if (!pipelineState.isRedacted) return;
+    if (!img || dynamicallyScannedImages.has(img)) return;
+    if (img.closest && img.closest('#privacyshield-root')) return;
+
+    dynamicallyScannedImages.add(img);
+    if (img.classList) img.classList.add('ps-scanned');
+
+    try {
+      const faceBoxes = await faceDetector.scanSingleImage(img);
+      if (faceBoxes && faceBoxes.length > 0 && pipelineState.isRedacted) {
+        const injected = domRedactor.redactDOMFaces(faceBoxes);
+        if (injected > 0) {
+          console.log(`[PrivacyShield Dynamic Scan] Redacted ${injected} faces on dynamic thumbnail.`);
+          const statFaces = document.getElementById('stat-faces-count');
+          if (statFaces) {
+            statFaces.textContent = parseInt(statFaces.textContent || '0', 10) + injected;
+          }
+        }
+      }
+    } catch (err) {
+      // Gracefully handle any dynamic scan error
+    }
+  }
+
+  function handleCandidateImage(img) {
+    if (!pipelineState.isRedacted || !img || dynamicallyScannedImages.has(img)) return;
+    if (img.closest && img.closest('#privacyshield-root')) return;
+
+    const rect = img.getBoundingClientRect();
+    if (rect.width < 32 || rect.height < 32) return;
+
+    if (img.tagName && img.tagName.toLowerCase() === 'img') {
+      if (!img.complete || img.naturalWidth === 0) {
+        img.addEventListener('load', () => {
+          if (pipelineState.isRedacted && isElementInOrNearViewport(img)) {
+            scanAndRedactSingleImage(img);
+          }
+        }, { once: true });
+        return;
+      }
+    }
+
+    if (isElementInOrNearViewport(img)) {
+      scanAndRedactSingleImage(img);
+    }
+  }
+
+  function onDebouncedScroll() {
+    if (!pipelineState.isRedacted) return;
+    if (dynamicScrollTimer) clearTimeout(dynamicScrollTimer);
+    dynamicScrollTimer = setTimeout(() => {
+      if (!pipelineState.isRedacted) return;
+      const images = document.querySelectorAll('img:not(.ps-scanned), [role="img"]:not(.ps-scanned)');
+      for (const img of images) {
+        handleCandidateImage(img);
+      }
+    }, 200);
+  }
+
+  function startDynamicFaceScanner() {
+    stopDynamicFaceScanner();
+
+    // Mark currently existing images as known if already processed
+    const existing = document.querySelectorAll('img, [role="img"]');
+    for (const img of existing) {
+      if (img.complete && img.naturalWidth > 0 && isElementInOrNearViewport(img)) {
+        dynamicallyScannedImages.add(img);
+        if (img.classList) img.classList.add('ps-scanned');
+      }
+    }
+
+    // Observe DOM for newly added nodes (e.g. YouTube ytd-rich-item-renderer)
+    dynamicFaceObserver = new MutationObserver((mutations) => {
+      if (!pipelineState.isRedacted) return;
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          if (node.nodeType !== Node.ELEMENT_NODE) continue;
+          if (node.id === 'privacyshield-root' || (node.closest && node.closest('#privacyshield-root'))) continue;
+
+          if (node.tagName && node.tagName.toLowerCase() === 'img') {
+            handleCandidateImage(node);
+          } else if (node.querySelectorAll) {
+            const imgs = node.querySelectorAll('img, [role="img"]');
+            for (const img of imgs) {
+              handleCandidateImage(img);
+            }
+          }
+        }
+      }
+    });
+
+    dynamicFaceObserver.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    window.addEventListener('scroll', onDebouncedScroll, { passive: true });
+  }
+
+  function stopDynamicFaceScanner() {
+    if (dynamicFaceObserver) {
+      dynamicFaceObserver.disconnect();
+      dynamicFaceObserver = null;
+    }
+    if (dynamicScrollTimer) {
+      clearTimeout(dynamicScrollTimer);
+      dynamicScrollTimer = null;
+    }
+    window.removeEventListener('scroll', onDebouncedScroll);
+    document.querySelectorAll('.ps-scanned').forEach(el => el.classList.remove('ps-scanned'));
+    dynamicallyScannedImages = new WeakSet();
+  }
+
   /**
    * Restores original DOM content when requested.
    */
   function onRestorePage() {
+    stopDynamicFaceScanner();
     domRedactor.restorePageDOM();
     pipelineState.isRedacted = false;
     updateProgress(0, 'Page Restored to Original', 'badge-dom');

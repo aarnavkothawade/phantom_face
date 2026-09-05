@@ -33,10 +33,10 @@ function synthesizeLocalActions(screenStructure, task, pageClassification) {
       let fieldType = 'name';
       const label = (inp.label || inp.selector || inp.id || '').toLowerCase();
       if (label.includes('email')) fieldType = 'email';
-      else if (label.includes('phone') || label.includes('mobile') || label.includes('contact')) fieldType = 'phone';
-      else if (label.includes('aadhaar') || label.includes('uid')) fieldType = 'aadhaar';
+      else if (label.includes('phone') || label.includes('mobile') || label.includes('contact') || label.includes('tel')) fieldType = 'phone';
+      else if (label.includes('aadhaar') || label.includes('uid') || label.includes('aadhar')) fieldType = 'aadhaar';
       else if (label.includes('pan')) fieldType = 'pan';
-      else if (label.includes('addr') || label.includes('street') || label.includes('residence')) fieldType = 'address';
+      else if (label.includes('addr') || label.includes('street') || label.includes('residence') || label.includes('flat')) fieldType = 'address';
       else if (label.includes('city')) fieldType = 'city';
       else if (label.includes('state')) fieldType = 'state';
       else if (label.includes('pin') || label.includes('zip')) fieldType = 'pincode';
@@ -48,28 +48,41 @@ function synthesizeLocalActions(screenStructure, task, pageClassification) {
       });
     });
 
-    const buttons = elements.filter(e => e.type === 'button');
-    if (buttons.length > 0) {
-      actions.push({ type: 'click', selector: buttons[0].selector });
-    }
+    // NOTE: In accordance with PrivacyShield safety policy, we NEVER automatically click submit buttons.
+    // The user must manually review and submit all filled forms.
 
     return {
       type: 'action',
       actions: actions.length > 0 ? actions : [
-        { type: 'fill', selector: 'input[name="name"]', fieldType: 'name' },
-        { type: 'fill', selector: 'input[name="email"]', fieldType: 'email' },
-        { type: 'fill', selector: 'input[name="phone"]', fieldType: 'phone' }
+        { type: 'fill', selector: '#input-fullname, input[name="name"]', fieldType: 'name' },
+        { type: 'fill', selector: '#input-user-email, input[name="email"]', fieldType: 'email' },
+        { type: 'fill', selector: '#input-user-phone, input[name="phone"]', fieldType: 'phone' },
+        { type: 'fill', selector: '#input-user-aadhaar, input[name="aadhaar"]', fieldType: 'aadhaar' },
+        { type: 'fill', selector: '#input-user-address, input[name="address"]', fieldType: 'address' }
       ]
     };
   }
 
-  if (lowerTask.includes('click') || lowerTask.includes('submit') || lowerTask.includes('press')) {
+  if (lowerTask.includes('click') || lowerTask.includes('press')) {
+    // Check if task is trying to submit - strictly disallow auto submission
+    if (lowerTask.includes('submit')) {
+      return {
+        type: 'response',
+        text: 'PrivacyShield Safety Policy: Form submissions cannot be performed autonomously. Please review the details and click Submit manually.'
+      };
+    }
     const buttons = elements.filter(e => e.type === 'button');
-    const btn = buttons[0] || { selector: 'button[type="submit"]' };
-    return {
-      type: 'action',
-      actions: [{ type: 'click', selector: btn.selector }]
-    };
+    const safeBtns = buttons.filter(b => {
+      const lbl = (b.label || b.selector || '').toLowerCase();
+      return !lbl.includes('submit');
+    });
+    const btn = safeBtns[0] || buttons[0];
+    if (btn) {
+      return {
+        type: 'action',
+        actions: [{ type: 'click', selector: btn.selector }]
+      };
+    }
   }
 
   return {

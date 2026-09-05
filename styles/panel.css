@@ -60,7 +60,53 @@
 .ps-header-actions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
+}
+
+/* On-Device Heuristic Threat / Site Exposure Indicator */
+.ps-threat-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #F3F1EC;
+  border: 1px solid #E5E3DD;
+  border-radius: 6px;
+  padding: 3px 8px;
+}
+
+.ps-threat-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #1F1E1D;
+  white-space: nowrap;
+}
+
+.ps-threat-bar-track {
+  width: 54px;
+  height: 6px;
+  background: #E5E3DD;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.ps-threat-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: #10B981;
+  border-radius: 3px;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.ps-threat-bar-fill.level-low {
+  background: #10B981;
+}
+
+.ps-threat-bar-fill.level-medium {
+  background: #F59E0B;
+}
+
+.ps-threat-bar-fill.level-high {
+  background: #EF4444;
 }
 
 .ps-icon-btn {

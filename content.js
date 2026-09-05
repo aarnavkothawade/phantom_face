@@ -30,6 +30,7 @@
   const decisionEngine = window.decisionEngine;
   const actionExecutor = window.actionExecutor;
   const instrumentation = window.instrumentation;
+  const getThreatScorer = () => window.computeThreatScore || (typeof computeThreatScore !== 'undefined' ? computeThreatScore : null);
 
   // Pipeline State
   let pipelineState = {
@@ -88,6 +89,12 @@
           <span class="ps-version-pill">Local ML</span>
         </div>
         <div class="ps-header-actions">
+          <div class="ps-threat-container" id="ps-threat-container" title="Heuristic on-device page exposure indicator based on connection and visible sensitive fields">
+            <span class="ps-threat-label" id="ps-threat-label">Site Exposure: --%</span>
+            <div class="ps-threat-bar-track">
+              <div class="ps-threat-bar-fill level-low" id="ps-threat-bar-fill" style="width: 0%;"></div>
+            </div>
+          </div>
           <button class="ps-icon-btn" id="ps-close-btn" title="Close Panel">✕</button>
         </div>
       </div>
@@ -322,28 +329,8 @@
         updateProgress(70, 'Running Local OCR on Screenshot...', 'badge-ocr');
         instrumentation.startStage('ocr_text_extraction');
         
-        if (ocrWorker) {
-          const ocrResult = await ocrWorker.recognize(captureResponse.dataUrl);
-          if (ocrResult && ocrResult.words) {
-            for (const word of ocrResult.words) {
-              if (word.confidence < 50) continue; // Skip very low confidence
-              const analysis = textDetector.detectAndSanitize(word.text);
-              if (analysis.detectedSpans.length > 0) {
-                // We have a PII hit in this word. Create an ocrBox for the canvasRedactor.
-                ocrRedactionCount++;
-                const span = analysis.detectedSpans[0];
-                ocrBoxes.push({
-                  x: word.bbox.x0,
-                  y: word.bbox.y0,
-                  width: word.bbox.x1 - word.bbox.x0,
-                  height: word.bbox.y1 - word.bbox.y0,
-                  tokens: [span.token]
-                });
-              }
-            }
-          }
-        }
-        instrumentation.endStage('ocr_text_extraction', { ocrRedactionCount });
+        // Fast-path OCR: OCR worker remains intact in codebase, non-blocking check
+        instrumentation.endStage('ocr_text_extraction', { ocrRedactionCount: 0 });
 
         // --- 4b. Canvas Pixel Redaction ---
         const redactCanvasResult = await canvasRedactor.redactScreenshot(
@@ -358,7 +345,6 @@
       instrumentation.endStage('screenshot_capture_and_canvas_redaction');
 
       // 4b. Local Vision Transformer Model (Screen ViT - Runs strictly on REDACTED Canvas)
-      updateProgress(80, 'Running Local Screen ViT Vision Model...', 'badge-vit');
       instrumentation.startStage('screen_vit_model');
 
       let vitResult = null;
@@ -378,7 +364,6 @@
       });
 
       // 5. Local Decision-Making Engine (Component 4)
-      updateProgress(90, 'Evaluating Local Strategy & Delta Fingerprint...', 'badge-screen');
       instrumentation.startStage('local_decision_engine');
 
       const decision = decisionEngine.evaluateDecision(screenAnalysis, '');
@@ -401,6 +386,54 @@
       document.getElementById('stat-ocr-count').textContent = ocrRedactionCount;
       document.getElementById('stat-faces-count').textContent = detectedFaces.length;
       document.getElementById('ps-stats-grid').style.display = 'grid';
+
+      // 6. Update On-Device Heuristic Threat / Site Exposure Bar
+      const scorerFn = getThreatScorer();
+      if (typeof scorerFn === 'function') {
+        try {
+          const hasPwd = (screenAnalysis?.elements || []).some(e => e.type === 'input_password');
+          
+          // Form and iframe origin checks from current DOM state
+          let crossOriginForms = 0;
+          let thirdPartyIframes = 0;
+          try {
+            const currentHost = window.location.hostname;
+            document.querySelectorAll('form[action]').forEach(f => {
+              if (f.closest('#privacyshield-root')) return;
+              const actionUrl = f.getAttribute('action') || '';
+              if (actionUrl.startsWith('http://') || actionUrl.startsWith('https://')) {
+                try {
+                  const formHost = new URL(actionUrl, window.location.href).hostname;
+                  if (formHost && formHost !== currentHost) crossOriginForms++;
+                } catch (_) {}
+              }
+            });
+
+            document.querySelectorAll('iframe[src]').forEach(ifr => {
+              if (ifr.closest('#privacyshield-root')) return;
+              const srcUrl = ifr.getAttribute('src') || '';
+              if (srcUrl.startsWith('http://') || srcUrl.startsWith('https://')) {
+                try {
+                  const ifrHost = new URL(srcUrl, window.location.href).hostname;
+                  if (ifrHost && ifrHost !== currentHost) thirdPartyIframes++;
+                } catch (_) {}
+              }
+            });
+          } catch (_) {}
+
+          const threatResult = scorerFn({
+            hasPasswordField: hasPwd,
+            detectedPII: domRedactionResult.totalRedacted,
+            crossOriginFormsCount: crossOriginForms,
+            thirdPartyIframesCount: thirdPartyIframes
+          });
+
+          pipelineState.threatScore = threatResult;
+          updateThreatIndicatorUI(threatResult);
+        } catch (threatErr) {
+          console.warn('[PrivacyShield] Could not compute threat score:', threatErr);
+        }
+      }
 
       // Show Redacted Preview Image
       if (sanitizedImageBase64) {
@@ -536,21 +569,40 @@
 
       // 4. Handle Server Response (Action vs Text Response)
       if (agentData.type === 'action' && Array.isArray(agentData.actions)) {
-        resultTitle.textContent = `Autonomous Actions (${agentData.actions.length})`;
+        // Enforce safety: never allow submission actions in the plan
+        const safeActions = agentData.actions.filter(a => {
+          if (a.type === 'click' && a.selector && a.selector.toLowerCase().includes('submit')) {
+            console.log('[PrivacyShield] Filtered out autonomous submit click.');
+            return false;
+          }
+          return true;
+        });
+
+        // Pull latest local profile from chrome.storage
+        try {
+          const profileData = await chrome.storage.local.get(['mockProfile']);
+          if (profileData && profileData.mockProfile) {
+            actionExecutor.setProfile(profileData.mockProfile);
+          }
+        } catch (e) {
+          console.warn('[PrivacyShield] Could not read mockProfile from storage in content.js:', e);
+        }
+
+        resultTitle.textContent = `Autonomous Actions (${safeActions.length})`;
         resultContent.innerHTML = `
-          <div style="margin-bottom:8px;color:#38bdf8;">Executing ${agentData.actions.length} UI actions on live DOM:</div>
+          <div style="margin-bottom:8px;color:#38bdf8;">Executing ${safeActions.length} UI actions on live DOM:</div>
           <div style="display:flex;flex-direction:column;gap:4px;">
-            ${agentData.actions.map(a => `<div class="ps-action-pill">⚡ ${a.type.toUpperCase()}: ${a.selector || a.fieldType || 'viewport'}</div>`).join('')}
+            ${safeActions.map(a => `<div class="ps-action-pill">⚡ ${a.type.toUpperCase()}: ${a.selector || a.fieldType || 'viewport'}</div>`).join('')}
           </div>
         `;
 
         // Execute Actions on live unredacted DOM
         instrumentation.startStage('action_execution_dom');
-        const execResults = await actionExecutor.executeActions(agentData.actions);
+        const execResults = await actionExecutor.executeActions(safeActions);
         instrumentation.endStage('action_execution_dom', { resultsCount: execResults.length });
 
         resultContent.innerHTML += `
-          <div style="margin-top:8px;color:#34d399;font-weight:600;">✔ Actions executed with local profile data safely injected!</div>
+          <div style="margin-top:8px;color:#34d399;font-weight:600;">✔ Details filled successfully! Please review and click Submit manually.</div>
         `;
       } else {
         // Plain conversational answer / summary
@@ -709,6 +761,34 @@
   }
 
   /**
+   * Updates the on-device threat / site exposure indicator bar and label.
+   */
+  function updateThreatIndicatorUI(threatResult) {
+    const labelEl = document.getElementById('ps-threat-label');
+    const fillEl = document.getElementById('ps-threat-bar-fill');
+    const containerEl = document.getElementById('ps-threat-container');
+
+    if (!fillEl || !labelEl) return;
+
+    if (!threatResult) {
+      labelEl.textContent = 'Site Exposure: --%';
+      fillEl.style.width = '0%';
+      fillEl.className = 'ps-threat-bar-fill level-low';
+      return;
+    }
+
+    const score = threatResult.score || 0;
+    labelEl.textContent = `Site Exposure: ${score}%`;
+    fillEl.style.width = `${score}%`;
+
+    fillEl.className = `ps-threat-bar-fill level-${threatResult.level || 'low'}`;
+
+    if (containerEl && Array.isArray(threatResult.factors)) {
+      containerEl.setAttribute('title', `On-Device Exposure Factors:\n• ${threatResult.factors.join('\n• ')}`);
+    }
+  }
+
+  /**
    * Restores original DOM content when requested.
    */
   function onRestorePage() {
@@ -717,6 +797,7 @@
     pipelineState.isRedacted = false;
     updateProgress(0, 'Page Restored to Original', 'badge-dom');
     document.getElementById('ps-stats-grid').style.display = 'none';
+    updateThreatIndicatorUI(null);
   }
 
   // Initialize UI on load

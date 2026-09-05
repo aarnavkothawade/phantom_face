@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PrivacyShield Evaluation & Ground Truth Benchmark Page</title>
+  <link rel="stylesheet" href="../styles/floating-shield.css">
+  <link rel="stylesheet" href="../styles/panel.css">
   <style>
     :root {
       --bg: #0b0f19;
@@ -259,5 +261,27 @@
       </table>
     </div>
   </div>
+
+  <!-- PrivacyShield Agent Content Scripts (Native execution on benchmark page) -->
+  <script src="../config.js"></script>
+  <script src="../lib/browser-polyfill.js"></script>
+  <script src="../lib/pii/verhoeff.js"></script>
+  <script src="../lib/pii/luhn.js"></script>
+  <script src="../lib/pii/regex-rules.js"></script>
+  <script src="../lib/pii/text-detector.js"></script>
+  <script src="../lib/vision/tf.min.js"></script>
+  <script src="../lib/vision/blazeface.min.js"></script>
+  <script src="../lib/vision/face-detector.js"></script>
+  <script src="../lib/vision/tesseract/tesseract.min.js"></script>
+  <script src="../lib/vision/ocr-worker.js"></script>
+  <script src="../lib/vision/screen-analyzer.js"></script>
+  <script src="../lib/vision/screen-vit.js"></script>
+  <script src="../lib/decision/threat-score.js"></script>
+  <script src="../lib/decision/local-decision-engine.js"></script>
+  <script src="../lib/redactor/dom-redactor.js"></script>
+  <script src="../lib/redactor/canvas-redactor.js"></script>
+  <script src="../lib/executor/action-executor.js"></script>
+  <script src="../lib/telemetry/instrumentation.js"></script>
+  <script src="../content.js"></script>
 </body>
 </html>

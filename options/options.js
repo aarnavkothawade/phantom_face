@@ -21,16 +21,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   chrome.storage.local.get(['proxyUrl', 'mockProfile'], (data) => {
     if (data.proxyUrl) {
       proxyInput.value = data.proxyUrl;
+    } else if (typeof PrivacyShieldConfig !== 'undefined' && PrivacyShieldConfig.PROXY_SERVER_URL) {
+      proxyInput.value = PrivacyShieldConfig.PROXY_SERVER_URL;
     }
-    if (data.mockProfile) {
-      const p = data.mockProfile;
-      if (p.name) nameInput.value = p.name;
-      if (p.email) emailInput.value = p.email;
-      if (p.phone) phoneInput.value = p.phone;
-      if (p.aadhaar) aadhaarInput.value = p.aadhaar;
-      if (p.pan) panInput.value = p.pan;
-      if (p.city) cityInput.value = p.city;
-      if (p.address) addressInput.value = p.address;
+
+    const defaultProfile = (typeof PrivacyShieldConfig !== 'undefined' && PrivacyShieldConfig.MOCK_PROFILE) || {};
+    const p = data.mockProfile || defaultProfile;
+
+    if (p) {
+      if (p.name !== undefined) nameInput.value = p.name;
+      if (p.email !== undefined) emailInput.value = p.email;
+      if (p.phone !== undefined) phoneInput.value = p.phone;
+      if (p.aadhaar !== undefined) aadhaarInput.value = p.aadhaar;
+      if (p.pan !== undefined) panInput.value = p.pan;
+      if (p.city !== undefined) cityInput.value = p.city;
+      if (p.address !== undefined) addressInput.value = p.address;
     }
   });
 

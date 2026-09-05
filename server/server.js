@@ -65,17 +65,14 @@ Format 1: UI Autonomous Action (if the user asked to fill a form, click a button
       "type": "fill",
       "selector": "input#input-user-address",
       "fieldType": "address"
-    },
-    {
-      "type": "click",
-      "selector": "button#form-submit-btn"
     }
   ]
 }
 
-CRITICAL RULES FOR "fill" ACTIONS:
+CRITICAL RULES:
 - Specify "fieldType" as the semantic category (e.g. "name", "email", "phone", "aadhaar", "pan", "address", "city").
 - NEVER guess or output real PII values. The client replaces "fieldType" locally from a mock profile on device.
+- NEVER GENERATE CLICK ACTIONS FOR SUBMIT BUTTONS. Under PrivacyShield security policy, forms must always be submitted manually by the human user after reviewing the filled fields. Do NOT click submit, confirm, or complete buttons on forms.
 
 Format 2: Informational Answer / Summary (if the user asked a factual question, summary, or inspection)
 {
@@ -223,11 +220,13 @@ app.post('/api/agent', async (req, res) => {
           let fieldType = 'name';
           const lbl = (inp.label || inp.selector || '').toLowerCase();
           if (lbl.includes('email')) fieldType = 'email';
-          else if (lbl.includes('phone') || lbl.includes('mobile')) fieldType = 'phone';
-          else if (lbl.includes('aadhaar') || lbl.includes('uid')) fieldType = 'aadhaar';
+          else if (lbl.includes('phone') || lbl.includes('mobile') || lbl.includes('contact') || lbl.includes('tel')) fieldType = 'phone';
+          else if (lbl.includes('aadhaar') || lbl.includes('uid') || lbl.includes('aadhar')) fieldType = 'aadhaar';
           else if (lbl.includes('pan')) fieldType = 'pan';
-          else if (lbl.includes('addr') || lbl.includes('street')) fieldType = 'address';
+          else if (lbl.includes('addr') || lbl.includes('street') || lbl.includes('residence') || lbl.includes('flat')) fieldType = 'address';
           else if (lbl.includes('city')) fieldType = 'city';
+          else if (lbl.includes('state')) fieldType = 'state';
+          else if (lbl.includes('pin') || lbl.includes('zip')) fieldType = 'pincode';
 
           actions.push({
             type: 'fill',
@@ -236,28 +235,32 @@ app.post('/api/agent', async (req, res) => {
           });
         });
 
-        const buttons = (screenStructure?.elements || []).filter(e => e.type === 'button');
-        if (buttons.length > 0) {
-          actions.push({ type: 'click', selector: buttons[0].selector });
-        }
-
+        // NOTE: Forms must never be submitted automatically
         resultJson = {
           type: 'action',
           actions: actions.length > 0 ? actions : [
-            { type: 'fill', selector: 'input[name="name"]', fieldType: 'name' },
-            { type: 'fill', selector: 'input[name="email"]', fieldType: 'email' },
-            { type: 'fill', selector: 'input[name="phone"]', fieldType: 'phone' }
+            { type: 'fill', selector: '#input-fullname, input[name="name"]', fieldType: 'name' },
+            { type: 'fill', selector: '#input-user-email, input[name="email"]', fieldType: 'email' },
+            { type: 'fill', selector: '#input-user-phone, input[name="phone"]', fieldType: 'phone' },
+            { type: 'fill', selector: '#input-user-aadhaar, input[name="aadhaar"]', fieldType: 'aadhaar' },
+            { type: 'fill', selector: '#input-user-address, input[name="address"]', fieldType: 'address' }
           ]
         };
-      } else if (lowerTask.includes('click') || lowerTask.includes('submit') || lowerTask.includes('press')) {
-        const buttons = (screenStructure?.elements || []).filter(e => e.type === 'button');
-        const btn = buttons[0] || { selector: 'button[type="submit"]' };
-        resultJson = {
-          type: 'action',
-          actions: [
-            { type: 'click', selector: btn.selector }
-          ]
-        };
+      } else if (lowerTask.includes('click') || lowerTask.includes('press')) {
+        if (lowerTask.includes('submit')) {
+          resultJson = {
+            type: 'response',
+            text: 'PrivacyShield Safety Policy: Form submissions cannot be performed autonomously. Please review the details and submit manually.'
+          };
+        } else {
+          const buttons = (screenStructure?.elements || []).filter(e => e.type === 'button');
+          const safeBtns = buttons.filter(b => !(b.label || b.selector || '').toLowerCase().includes('submit'));
+          const btn = safeBtns[0] || buttons[0];
+          resultJson = {
+            type: 'action',
+            actions: btn ? [{ type: 'click', selector: btn.selector }] : []
+          };
+        }
       } else {
         resultJson = {
           type: 'response',

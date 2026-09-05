@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "PrivacyShield - Local Privacy-Preserving Vision Agent",
-  "version": "1.0.0",
-  "description": "Local privacy-preserving vision agent for Chrome and Firefox. Redacts PII, faces, and sensitive screen data locally before VLM inference.",
+  "name": "Project Phantom",
+  "version": "0.8.1",
+  "description": "Local privacy-preserving vision agent for all Web Browsers Redacts PII, faces, and sensitive screen data locally before VLM inference.",
   "icons": {
     "16": "icons/icon-16.png",
     "48": "icons/icon-48.png",

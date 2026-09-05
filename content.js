@@ -45,6 +45,15 @@
     lastTelemetry: null
   };
 
+  let alwaysOnEnabled = false;
+  let dynamicTextRedactionTimer = null;
+  let pendingTextNodes = [];
+
+  function runAutoRedaction(node, isPartial) {
+    if (typeof domRedactor === 'undefined' || !domRedactor) return;
+    domRedactor.redactPageDOM(node, isPartial);
+  }
+
   /**
    * Builds and injects the floating action button and inspection panel into the host page.
    */
@@ -65,11 +74,8 @@
     // Floating Button
     const fab = document.createElement('button');
     fab.className = 'ps-fab-button';
-    fab.setAttribute('title', 'PrivacyShield: Click to Scan, Redact & Launch Vision Agent');
     fab.innerHTML = `
       ${shieldSvg}
-      <span class="ps-fab-badge" id="ps-fab-badge">LOCAL</span>
-      <span class="ps-fab-tooltip">PrivacyShield Agent (1-Click)</span>
     `;
 
     // Panel
@@ -81,13 +87,6 @@
     panel.innerHTML = `
       <!-- Header -->
       <div class="ps-header">
-        <div class="ps-header-title">
-          <svg style="width:18px;height:18px;stroke:#00f2fe;fill:none;" viewBox="0 0 24 24">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke-width="2"/>
-          </svg>
-          <h3>PrivacyShield Agent</h3>
-          <span class="ps-version-pill">Local ML</span>
-        </div>
         <div class="ps-header-actions">
           <div class="ps-threat-container" id="ps-threat-container" title="Heuristic on-device page exposure indicator based on connection and visible sensitive fields">
             <span class="ps-threat-label" id="ps-threat-label">Site Exposure: --%</span>
@@ -95,6 +94,11 @@
               <div class="ps-threat-bar-fill level-low" id="ps-threat-bar-fill" style="width: 0%;"></div>
             </div>
           </div>
+          <label class="ps-always-on-toggle" title="Automatically redacts sensitive info on every page, including as new content loads.">
+            <input type="checkbox" id="ps-always-on-checkbox">
+            <span class="ps-toggle-slider"></span>
+            <span class="ps-toggle-label">Always-On</span>
+          </label>
           <button class="ps-icon-btn" id="ps-close-btn" title="Close Panel">✕</button>
         </div>
       </div>
@@ -115,7 +119,6 @@
             <div class="ps-stage-badge" id="badge-pii"><span>•</span> PII Redaction</div>
             <div class="ps-stage-badge" id="badge-face"><span>•</span> Face ML</div>
             <div class="ps-stage-badge" id="badge-screen"><span>•</span> Screen Model</div>
-            <div class="ps-stage-badge" id="badge-pixel"><span>•</span> Pixel Blur</div>
             <div class="ps-stage-badge" id="badge-ocr"><span>•</span> OCR Text</div>
             <div class="ps-stage-badge" id="badge-vit"><span>•</span> ViT Model</div>
           </div>
@@ -187,7 +190,7 @@
 
       <!-- Footer Controls -->
       <div class="ps-footer">
-        <button class="ps-text-btn" id="ps-restore-btn">Restore Original DOM</button>
+        <button class="ps-text-btn" id="ps-restore-btn">Recall Page</button>
         <button class="ps-text-btn" id="ps-rescan-btn">Re-Scan & Redact</button>
       </div>
     `;
@@ -197,7 +200,73 @@
     document.body.appendChild(host);
 
     // Event Bindings
-    fab.addEventListener('click', onOneButtonClick);
+    let isDragging = false;
+    let dragStartX, dragStartY;
+    let initialLeft, initialTop;
+
+    window.positionPrivacyShieldPanel = function() {
+      const fabRect = fab.getBoundingClientRect();
+      const panelHeight = panel.offsetHeight || 400;
+      const panelWidth = panel.offsetWidth || 420;
+      
+      let top = fabRect.top - panelHeight - 16;
+      if (top < 10) {
+        top = fabRect.bottom + 16;
+      }
+      
+      let left = fabRect.right - panelWidth;
+      if (left < 10) {
+        left = 10;
+      }
+      if (left + panelWidth > window.innerWidth) {
+        left = window.innerWidth - panelWidth - 10;
+      }
+      
+      panel.style.top = top + 'px';
+      panel.style.left = left + 'px';
+      panel.style.bottom = 'auto';
+      panel.style.right = 'auto';
+    };
+
+    fab.addEventListener('mousedown', (e) => {
+      isDragging = false;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      
+      const rect = fab.getBoundingClientRect();
+      fab.style.left = rect.left + 'px';
+      fab.style.top = rect.top + 'px';
+      fab.style.bottom = 'auto';
+      fab.style.right = 'auto';
+      
+      initialLeft = rect.left;
+      initialTop = rect.top;
+
+      function onMouseMove(moveEvent) {
+        const dx = moveEvent.clientX - dragStartX;
+        const dy = moveEvent.clientY - dragStartY;
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+          isDragging = true;
+          fab.style.left = (initialLeft + dx) + 'px';
+          fab.style.top = (initialTop + dy) + 'px';
+          
+          if (panel.style.display !== 'none') {
+            window.positionPrivacyShieldPanel();
+          }
+        }
+      }
+
+      function onMouseUp(upEvent) {
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        if (!isDragging) {
+          onOneButtonClick();
+        }
+      }
+
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
     panel.querySelector('#ps-close-btn').addEventListener('click', () => panel.style.display = 'none');
     panel.querySelector('#ps-restore-btn').addEventListener('click', onRestorePage);
     panel.querySelector('#ps-rescan-btn').addEventListener('click', onOneButtonClick);
@@ -211,6 +280,36 @@
       if (e.key === 'Enter') {
         e.preventDefault();
         onTaskSubmit();
+      }
+    });
+
+    const alwaysOnCheckbox = panel.querySelector('#ps-always-on-checkbox');
+    if (alwaysOnCheckbox) {
+      alwaysOnCheckbox.addEventListener('change', (e) => {
+        alwaysOnEnabled = e.target.checked;
+        chrome.storage.local.set({ alwaysOnRedaction: alwaysOnEnabled });
+        if (alwaysOnEnabled) {
+          runAutoRedaction(document.body, false);
+          if (!dynamicFaceObserver) startDynamicFaceScanner();
+        } else {
+          if (!pipelineState.isRedacted) {
+            stopDynamicFaceScanner();
+          }
+        }
+      });
+    }
+  }
+
+  function initializeAlwaysOn() {
+    chrome.storage.local.get(['alwaysOnRedaction'], (res) => {
+      if (res.alwaysOnRedaction) {
+        alwaysOnEnabled = true;
+        const cb = document.getElementById('ps-always-on-checkbox');
+        if (cb) cb.checked = true;
+        runAutoRedaction(document.body, false);
+        if (!dynamicFaceObserver) {
+          startDynamicFaceScanner();
+        }
       }
     });
   }
@@ -242,7 +341,7 @@
     if (percentEl) percentEl.textContent = `${percent}%`;
     if (fillEl) fillEl.style.width = `${percent}%`;
 
-    const badges = ['badge-dom', 'badge-pii', 'badge-face', 'badge-screen', 'badge-pixel', 'badge-ocr', 'badge-vit'];
+    const badges = ['badge-dom', 'badge-pii', 'badge-face', 'badge-screen', 'badge-ocr', 'badge-vit'];
     badges.forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
@@ -267,6 +366,7 @@
     const fab = document.querySelector('.ps-fab-button');
     panel.style.display = 'flex';
     fab.classList.add('ps-active');
+    if (window.positionPrivacyShieldPanel) window.positionPrivacyShieldPanel();
 
     // Reset view states
     document.getElementById('ps-stats-grid').style.display = 'none';
@@ -376,7 +476,7 @@
 
       // Update UI with Results
       updateProgress(100, 'Redaction Complete (Zero PII Transmitted)', 'badge-vit');
-      ['badge-dom', 'badge-pii', 'badge-face', 'badge-screen', 'badge-pixel', 'badge-ocr', 'badge-vit'].forEach(id => {
+      ['badge-dom', 'badge-pii', 'badge-face', 'badge-screen', 'badge-ocr', 'badge-vit'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.className = 'ps-stage-badge done';
       });
@@ -720,21 +820,41 @@
 
     // Observe DOM for newly added nodes (e.g. YouTube ytd-rich-item-renderer)
     dynamicFaceObserver = new MutationObserver((mutations) => {
-      if (!pipelineState.isRedacted) return;
+      if (!pipelineState.isRedacted && !alwaysOnEnabled) return;
+      
       for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
           if (node.nodeType !== Node.ELEMENT_NODE) continue;
           if (node.id === 'privacyshield-root' || (node.closest && node.closest('#privacyshield-root'))) continue;
 
-          if (node.tagName && node.tagName.toLowerCase() === 'img') {
-            handleCandidateImage(node);
-          } else if (node.querySelectorAll) {
-            const imgs = node.querySelectorAll('img, [role="img"]');
-            for (const img of imgs) {
-              handleCandidateImage(img);
+          if (alwaysOnEnabled) {
+            const tag = node.tagName.toLowerCase();
+            if (!['script', 'style', 'noscript', 'canvas', 'svg', 'iframe'].includes(tag)) {
+               pendingTextNodes.push(node);
+            }
+          }
+
+          if (pipelineState.isRedacted) {
+            if (node.tagName && node.tagName.toLowerCase() === 'img') {
+              handleCandidateImage(node);
+            } else if (node.querySelectorAll) {
+              const imgs = node.querySelectorAll('img, [role="img"]');
+              for (const img of imgs) {
+                handleCandidateImage(img);
+              }
             }
           }
         }
+      }
+
+      if (alwaysOnEnabled && pendingTextNodes.length > 0) {
+        if (dynamicTextRedactionTimer) clearTimeout(dynamicTextRedactionTimer);
+        dynamicTextRedactionTimer = setTimeout(() => {
+          if (!alwaysOnEnabled) return;
+          const nodesToProcess = pendingTextNodes;
+          pendingTextNodes = [];
+          nodesToProcess.forEach(n => runAutoRedaction(n, true));
+        }, 300);
       }
     });
 
@@ -755,6 +875,11 @@
       clearTimeout(dynamicScrollTimer);
       dynamicScrollTimer = null;
     }
+    if (dynamicTextRedactionTimer) {
+      clearTimeout(dynamicTextRedactionTimer);
+      dynamicTextRedactionTimer = null;
+    }
+    pendingTextNodes = [];
     window.removeEventListener('scroll', onDebouncedScroll);
     document.querySelectorAll('.ps-scanned').forEach(el => el.classList.remove('ps-scanned'));
     dynamicallyScannedImages = new WeakSet();
@@ -798,12 +923,29 @@
     updateProgress(0, 'Page Restored to Original', 'badge-dom');
     document.getElementById('ps-stats-grid').style.display = 'none';
     updateThreatIndicatorUI(null);
+
+    // Shut off always-on redaction
+    alwaysOnEnabled = false;
+    chrome.storage.local.set({ alwaysOnRedaction: false });
+    const cb = document.getElementById('ps-always-on-checkbox');
+    if (cb) cb.checked = false;
+
+    // Shut off extension panel
+    document.getElementById('ps-panel').style.display = 'none';
+    
+    // Reset FAB active state
+    const fab = document.querySelector('.ps-fab-button');
+    if (fab) fab.classList.remove('ps-active');
   }
 
   // Initialize UI on load
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', injectUI);
+    document.addEventListener('DOMContentLoaded', () => {
+      injectUI();
+      initializeAlwaysOn();
+    });
   } else {
     injectUI();
+    initializeAlwaysOn();
   }
 })();

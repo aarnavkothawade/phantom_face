@@ -645,6 +645,14 @@ document.addEventListener('DOMContentLoaded', () => {
     window.close();
   });
 
+  // Close Popup
+  const btnClosePopup = document.getElementById('btn-close-popup');
+  if (btnClosePopup) {
+    btnClosePopup.addEventListener('click', () => {
+      window.close();
+    });
+  }
+
   // Retry Analysis
   if (btnRetryScan) {
     btnRetryScan.addEventListener('click', analyzeCurrentTab);

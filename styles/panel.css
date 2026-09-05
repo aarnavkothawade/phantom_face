@@ -1,9 +1,8 @@
 /* PrivacyShield - Inspection Panel & Telemetry UI (Claude / Anthropic Warm Minimal Theme) */
 
 .ps-panel {
-  position: fixed;
-  bottom: 84px;
-  right: 24px;
+  position: absolute;
+  pointer-events: auto;
   width: 420px;
   max-width: calc(100vw - 32px);
   max-height: calc(100vh - 110px);
@@ -28,7 +27,7 @@
   border-bottom: 1px solid #E5E3DD;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
 }
 
 .ps-header-title {
@@ -72,6 +71,7 @@
   border: 1px solid #E5E3DD;
   border-radius: 6px;
   padding: 3px 8px;
+  margin-right: 12px;
 }
 
 .ps-threat-label {
@@ -107,6 +107,63 @@
 
 .ps-threat-bar-fill.level-high {
   background: #EF4444;
+}
+
+/* Always-On Toggle */
+.ps-always-on-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  background: #F3F1EC;
+  border: 1px solid #E5E3DD;
+  border-radius: 6px;
+  padding: 3px 8px;
+  position: relative;
+  margin-right: 4px;
+}
+
+.ps-always-on-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.ps-toggle-slider {
+  position: relative;
+  width: 24px;
+  height: 14px;
+  background-color: #D1D5DB;
+  border-radius: 14px;
+  transition: .3s;
+}
+
+.ps-toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 10px;
+  width: 10px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  border-radius: 50%;
+  transition: .3s;
+}
+
+.ps-always-on-toggle input:checked + .ps-toggle-slider {
+  background-color: #10B981;
+}
+
+.ps-always-on-toggle input:checked + .ps-toggle-slider:before {
+  transform: translateX(10px);
+}
+
+.ps-toggle-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #1F1E1D;
+  white-space: nowrap;
 }
 
 .ps-icon-btn {

@@ -123,27 +123,40 @@ h1, h2, h3, h4, h5, h6, strong, label, .ps-threat-label, .ps-toggle-label, .ps-r
   border: 1px solid #E5E3DD;
   border-radius: 6px;
   font-size: 11px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
   pointer-events: auto;
-  min-width: 180px;
+  min-width: 220px;
+  max-width: 320px;
+  z-index: 2147483647;
+  user-select: none;
 }
 
 .ps-telemetry-header {
-  padding: 6px 12px;
+  padding: 7px 12px;
   cursor: pointer;
   color: #6E6D6A;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: background 0.15s ease, color 0.15s ease;
+  border-radius: 6px;
 }
-.ps-telemetry-header:hover { color: #1F1E1D; }
+.ps-telemetry-header:hover { 
+  color: #1F1E1D; 
+  background: rgba(0,0,0,0.03);
+}
 
 .ps-telemetry-body {
   padding: 0 12px 10px 12px;
   border-top: 1px solid #E5E3DD;
-  margin-top: 4px;
-  padding-top: 6px;
+  margin-top: 2px;
+  padding-top: 8px;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  max-height: 280px;
+  overflow-y: auto;
 }
 
 .ps-waterfall-row {
@@ -357,7 +370,12 @@ h1, h2, h3, h4, h5, h6, strong, label, .ps-threat-label, .ps-toggle-label, .ps-r
   padding: 6px 10px;
   font-size: 12px;
   font-family: inherit;
+  color: #000000 !important;
   outline: none;
+}
+.ps-task-input-minimal::placeholder {
+  color: #6E6D6A;
+  opacity: 0.8;
 }
 .ps-task-input-minimal:focus { border-color: #D97757; }
 

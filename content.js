@@ -98,7 +98,8 @@
       <!-- Bottom Left: Telemetry Drawer (Hidden until scan/activity) -->
       <div class="ps-telemetry-minimal" id="ps-drawer" style="display:none;">
         <div class="ps-telemetry-header" id="ps-drawer-toggle">
-          <span>⚙ Audit (<span id="ps-total-latency">0 ms</span>)</span>
+          <span>⚙ Audit (<span id="ps-total-latency">0 ms</span>) <span id="ps-drawer-arrow" style="font-size: 9px; margin-left: 4px;">▼</span></span>
+          <button class="ps-icon-btn-minimal" id="ps-drawer-close" style="width:18px; height:18px; border:none; background:transparent; font-size:11px; padding:0; color:#6E6D6A;" title="Close Audit">✕</button>
         </div>
         <div class="ps-telemetry-body" id="ps-drawer-body" style="display:none;">
           <div id="ps-telemetry-meta">HW: <strong id="meta-hw">...</strong> | Face: <strong id="meta-face">...</strong></div>
@@ -121,6 +122,7 @@
             <button class="ps-icon-btn-minimal" id="ps-details-toggle" style="border-radius: 50%; width: 26px; height: 26px; padding: 0;" title="View Redaction Details">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
             </button>
+            <button class="ps-icon-btn-minimal" id="ps-task-close" style="border-radius: 50%; width: 22px; height: 22px; padding: 0; font-size: 11px; margin-left: 2px;" title="Dismiss Task Bar">✕</button>
           </div>
           
           <div class="ps-task-details-popover" id="ps-task-details" style="display:none;">
@@ -174,6 +176,22 @@
     const fabContainer = host.querySelector('.ps-fab-container');
     
     let hideFabMenuTimer = null;
+    const hideEphemeralUI = () => {
+      fabMenu.classList.remove('visible');
+      // Hide the task input box if user is not actively focused on typing
+      const taskInput = host.querySelector('#ps-task-input');
+      const taskBox = host.querySelector('#ps-task-box');
+      if (taskBox && (!taskInput || document.activeElement !== taskInput)) {
+        taskBox.style.display = 'none';
+      }
+      // Hide result toast
+      const resultCard = host.querySelector('#ps-result-card');
+      if (resultCard) resultCard.style.display = 'none';
+      // Hide telemetry drawer
+      const drawer = host.querySelector('#ps-drawer');
+      if (drawer) drawer.style.display = 'none';
+    };
+
     mainFab.addEventListener('mouseenter', () => {
       if (hideFabMenuTimer) clearTimeout(hideFabMenuTimer);
       fabMenu.classList.add('visible');
@@ -183,8 +201,31 @@
     });
     fabContainer.addEventListener('mouseleave', () => {
       hideFabMenuTimer = setTimeout(() => {
+        hideEphemeralUI();
+      }, 4000);
+    });
+
+    // Dismiss ephemeral UI when clicking outside of phantom controls
+    document.addEventListener('mousedown', (e) => {
+      const taskBox = host.querySelector('#ps-task-box');
+      const drawer = host.querySelector('#ps-drawer');
+      const resultCard = host.querySelector('#ps-result-card');
+      
+      const inFab = fabContainer && fabContainer.contains(e.target);
+      const inDrawer = drawer && drawer.contains(e.target);
+
+      if (!inFab && !inDrawer) {
         fabMenu.classList.remove('visible');
-      }, 4500);
+        if (taskBox && taskBox.style.display !== 'none') {
+          taskBox.style.display = 'none';
+        }
+        if (resultCard && resultCard.style.display !== 'none') {
+          resultCard.style.display = 'none';
+        }
+        if (drawer && drawer.style.display !== 'none') {
+          drawer.style.display = 'none';
+        }
+      }
     });
     
     let isDragging = false;
@@ -246,14 +287,35 @@
 
     host.querySelector('#ps-restore-btn').addEventListener('click', onRestorePage);
     host.querySelector('#ps-rescan-btn').addEventListener('click', onOneButtonClick);
-    host.querySelector('#ps-drawer-toggle').addEventListener('click', toggleTelemetryDrawer);
+    host.querySelector('#ps-drawer-toggle').addEventListener('click', (e) => {
+      if (e.target.closest('#ps-drawer-close')) return;
+      toggleTelemetryDrawer();
+    });
+
+    const drawerClose = host.querySelector('#ps-drawer-close');
+    if (drawerClose) {
+      drawerClose.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const drawer = host.querySelector('#ps-drawer');
+        if (drawer) drawer.style.display = 'none';
+      });
+    }
 
     const taskInput = host.querySelector('#ps-task-input');
     const goBtn = host.querySelector('#ps-go-btn');
     const detailsToggle = host.querySelector('#ps-details-toggle');
     const taskDetails = host.querySelector('#ps-task-details');
+    const taskClose = host.querySelector('#ps-task-close');
     const resultClose = host.querySelector('#ps-result-close');
     const resultCard = host.querySelector('#ps-result-card');
+
+    if (taskClose) {
+      taskClose.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const taskBox = host.querySelector('#ps-task-box');
+        if (taskBox) taskBox.style.display = 'none';
+      });
+    }
 
     goBtn.addEventListener('click', onTaskSubmit);
     taskInput.addEventListener('keydown', (e) => {
@@ -314,12 +376,13 @@
   function toggleTelemetryDrawer() {
     const body = document.getElementById('ps-drawer-body');
     const arrow = document.getElementById('ps-drawer-arrow');
+    if (!body) return;
     if (body.style.display === 'none') {
       body.style.display = 'flex';
-      arrow.textContent = '▲';
+      if (arrow) arrow.textContent = '▲';
     } else {
       body.style.display = 'none';
-      arrow.textContent = '▼';
+      if (arrow) arrow.textContent = '▼';
     }
   }
 
@@ -564,7 +627,16 @@
       showErrorToast(`Error: ${err.message}`);
     } finally {
       pipelineState.isScanning = false;
-      
+      const indicator = document.getElementById('ps-scanning-indicator');
+      if (indicator) indicator.style.display = 'none';
+      const statusDots = document.getElementById('ps-status-dots');
+      if (statusDots) {
+        setTimeout(() => {
+          if (!pipelineState.isScanning) {
+            statusDots.style.display = 'none';
+          }
+        }, 1500);
+      }
     }
   }
 

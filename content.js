@@ -74,14 +74,14 @@
     host.innerHTML = `
       <!-- Top Right: Exposure Bar -->
       <div class="ps-top-right-container">
-        <div class="ps-exposure-bar-minimal" id="ps-threat-container" title="Heuristic on-device page exposure indicator based on connection and visible sensitive fields">
+        <div class="ps-exposure-bar-minimal" id="ps-threat-container" style="display:none;" title="Heuristic on-device page exposure indicator based on connection and visible sensitive fields">
           <span class="ps-threat-label" id="ps-threat-label">Exposure: --%</span>
           <div class="ps-threat-bar-track-minimal">
             <div class="ps-threat-bar-fill-minimal level-low" id="ps-threat-bar-fill" style="width: 0%;"></div>
           </div>
         </div>
-        <!-- Status Dots -->
-        <div class="ps-status-dots" id="ps-status-dots">
+        <!-- Status Dots & Loading Bar -->
+        <div class="ps-status-dots" id="ps-status-dots" style="display:none;">
           <div class="ps-dot" id="badge-dom" title="DOM Scan"></div>
           <div class="ps-dot" id="badge-pii" title="PII Redaction"></div>
           <div class="ps-dot" id="badge-face" title="Face ML"></div>
@@ -95,8 +95,8 @@
         </div>
       </div>
 
-      <!-- Bottom Left: Telemetry Drawer -->
-      <div class="ps-telemetry-minimal" id="ps-drawer">
+      <!-- Bottom Left: Telemetry Drawer (Hidden until scan/activity) -->
+      <div class="ps-telemetry-minimal" id="ps-drawer" style="display:none;">
         <div class="ps-telemetry-header" id="ps-drawer-toggle">
           <span>⚙ Audit (<span id="ps-total-latency">0 ms</span>)</span>
         </div>
@@ -118,7 +118,9 @@
           <div class="ps-task-bar-input-row">
             <input type="text" class="ps-task-input-minimal" id="ps-task-input" placeholder="What do you want me to do?"/>
             <button class="ps-go-btn-minimal" id="ps-go-btn">Go</button>
-            <button class="ps-icon-btn-minimal" id="ps-details-toggle" title="View Redaction Details">ℹ️</button>
+            <button class="ps-icon-btn-minimal" id="ps-details-toggle" style="border-radius: 50%; width: 26px; height: 26px; padding: 0;" title="View Redaction Details">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            </button>
           </div>
           
           <div class="ps-task-details-popover" id="ps-task-details" style="display:none;">
@@ -169,9 +171,78 @@
     // Event Bindings
     const mainFab = host.querySelector('#ps-main-fab');
     const fabMenu = host.querySelector('#ps-fab-menu');
-    mainFab.addEventListener('mouseenter', () => fabMenu.classList.add('visible'));
-    host.querySelector('.ps-fab-container').addEventListener('mouseleave', () => fabMenu.classList.remove('visible'));
-    mainFab.addEventListener('click', onOneButtonClick);
+    const fabContainer = host.querySelector('.ps-fab-container');
+    
+    let hideFabMenuTimer = null;
+    mainFab.addEventListener('mouseenter', () => {
+      if (hideFabMenuTimer) clearTimeout(hideFabMenuTimer);
+      fabMenu.classList.add('visible');
+    });
+    fabMenu.addEventListener('mouseenter', () => {
+      if (hideFabMenuTimer) clearTimeout(hideFabMenuTimer);
+    });
+    fabContainer.addEventListener('mouseleave', () => {
+      hideFabMenuTimer = setTimeout(() => {
+        fabMenu.classList.remove('visible');
+      }, 4500);
+    });
+    
+    let isDragging = false;
+    let hasDragged = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let initialLeft = 0;
+    let initialTop = 0;
+    let containerWidth = 0;
+    let containerHeight = 0;
+
+    mainFab.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      isDragging = true;
+      hasDragged = false;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+      const rect = fabContainer.getBoundingClientRect();
+      initialLeft = rect.left;
+      initialTop = rect.top;
+      containerWidth = rect.width;
+      containerHeight = rect.height;
+      // Do not mutate style.left/top or remove bottom/right on simple mousedown!
+      // This prevents click glitching or layout jumps when clicking without dragging.
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      const dx = e.clientX - dragStartX;
+      const dy = e.clientY - dragStartY;
+      if (!hasDragged && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
+        hasDragged = true;
+        fabContainer.style.right = 'auto';
+        fabContainer.style.bottom = 'auto';
+      }
+      if (hasDragged) {
+        const maxX = Math.max(10, window.innerWidth - containerWidth - 10);
+        const maxY = Math.max(10, window.innerHeight - containerHeight - 10);
+        const nextX = Math.min(Math.max(10, initialLeft + dx), maxX);
+        const nextY = Math.min(Math.max(10, initialTop + dy), maxY);
+        fabContainer.style.left = nextX + 'px';
+        fabContainer.style.top = nextY + 'px';
+      }
+    });
+
+    document.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+
+    mainFab.addEventListener('click', (e) => {
+      if (hasDragged) {
+        e.preventDefault();
+        e.stopPropagation();
+        hasDragged = false;
+        return;
+      }
+      onOneButtonClick();
+    });
 
     host.querySelector('#ps-restore-btn').addEventListener('click', onRestorePage);
     host.querySelector('#ps-rescan-btn').addEventListener('click', onOneButtonClick);
@@ -215,6 +286,12 @@
         }
       });
     }
+
+    // Hide exposure bar after 1 minute (60,000 ms)
+    setTimeout(() => {
+      const threatContainer = document.getElementById('ps-threat-container');
+      if (threatContainer) threatContainer.style.display = 'none';
+    }, 60000);
   }
 
   function initializeAlwaysOn() {
@@ -288,10 +365,14 @@
     if (pipelineState.isScanning) return;
     pipelineState.isScanning = true;
     stopDynamicFaceScanner();
+    
+    // Show top-right loading bar & status dots when FAB is clicked and scanning starts
+    const statusDots = document.getElementById('ps-status-dots');
+    if (statusDots) statusDots.style.display = 'flex';
 
-    
-    
-    
+    // Show exposure bar if it was hidden
+    const threatContainer = document.getElementById('ps-threat-container');
+    if (threatContainer) threatContainer.style.display = 'flex';
 
     // Reset view states
     document.getElementById('ps-stats-grid').style.display = 'none';
@@ -537,6 +618,10 @@
       `;
       container.appendChild(row);
     }
+
+    // Reveal telemetry drawer once audit data is populated
+    const drawer = document.getElementById('ps-drawer');
+    if (drawer) drawer.style.display = 'block';
   }
 
   /**
@@ -847,6 +932,15 @@
     pipelineState.isRedacted = false;
     updateProgress(0, 'Page Restored to Original', 'badge-dom');
     document.getElementById('ps-stats-grid').style.display = 'none';
+    document.getElementById('ps-task-box').style.display = 'none';
+    document.getElementById('ps-preview-box').style.display = 'none';
+    document.getElementById('ps-result-card').style.display = 'none';
+    const drawer = document.getElementById('ps-drawer');
+    if (drawer) drawer.style.display = 'none';
+    const statusDots = document.getElementById('ps-status-dots');
+    if (statusDots) statusDots.style.display = 'none';
+    const threatContainer = document.getElementById('ps-threat-container');
+    if (threatContainer) threatContainer.style.display = 'none';
     updateThreatIndicatorUI(null);
 
     // Shut off always-on redaction

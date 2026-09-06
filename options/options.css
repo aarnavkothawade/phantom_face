@@ -8,7 +8,7 @@
 body {
   background: #FAF9F5;
   color: #1F1E1D;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: "Anthropic Sans", styrene, Inter, system-ui, sans-serif; font-weight: 400;
   padding: 40px 20px;
   display: flex;
   justify-content: center;
@@ -108,7 +108,7 @@ h1 {
   padding: 2px 6px;
   border-radius: 4px;
   color: #1F1E1D;
-  font-family: ui-monospace, monospace;
+  font-family: "Anthropic Sans", styrene, Inter, system-ui, sans-serif; font-weight: 400;
 }
 
 /* Section Cards */

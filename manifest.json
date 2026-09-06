@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Project Phantom",
+  "name": "Phantom AI",
   "version": "0.8.1",
   "description": "Local privacy-preserving vision agent for all Web Browsers Redacts PII, faces, and sensitive screen data locally before VLM inference.",
   "icons": {
@@ -10,7 +10,7 @@
   },
   "action": {
     "default_popup": "popup/popup.html",
-    "default_title": "Phantom Face — Site Threat Analysis",
+    "default_title": "Phantom AI — Site Threat Analysis",
     "default_icon": {
       "16": "icons/icon-16.png",
       "48": "icons/icon-48.png",

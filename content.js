@@ -1,5 +1,5 @@
 /**
- * PrivacyShield - Core Content Script & One-Button Pipeline Coordinator
+ * Phantom AI - Core Content Script & One-Button Pipeline Coordinator
  * 
  * Orchestrates:
  * 1. DOM Scan & Text PII / NER Detection (with Verhoeff, Luhn, Regex, Entropy)
@@ -16,7 +16,7 @@
   if (window.__PRIVACY_SHIELD_INITIALIZED__) return;
   window.__PRIVACY_SHIELD_INITIALIZED__ = true;
 
-  console.log('[PrivacyShield] Initializing Privacy-Preserving Vision Agent...');
+  console.log('[Phantom AI] Initializing Privacy-Preserving Vision Agent...');
 
   // Module References (loaded in order via manifest or global scripts)
   const config = window.PrivacyShieldConfig || {};
@@ -71,209 +71,118 @@
       </svg>
     `;
 
-    // Floating Button
-    const fab = document.createElement('button');
-    fab.className = 'ps-fab-button';
-    fab.innerHTML = `
-      ${shieldSvg}
-    `;
-
-    // Panel
-    const panel = document.createElement('div');
-    panel.className = 'ps-panel';
-    panel.id = 'ps-panel';
-    panel.style.display = 'none';
-
-    panel.innerHTML = `
-      <!-- Header -->
-      <div class="ps-header">
-        <div class="ps-header-actions">
-          <div class="ps-threat-container" id="ps-threat-container" title="Heuristic on-device page exposure indicator based on connection and visible sensitive fields">
-            <span class="ps-threat-label" id="ps-threat-label">Site Exposure: --%</span>
-            <div class="ps-threat-bar-track">
-              <div class="ps-threat-bar-fill level-low" id="ps-threat-bar-fill" style="width: 0%;"></div>
-            </div>
+    host.innerHTML = `
+      <!-- Top Right: Exposure Bar -->
+      <div class="ps-top-right-container">
+        <div class="ps-exposure-bar-minimal" id="ps-threat-container" title="Heuristic on-device page exposure indicator based on connection and visible sensitive fields">
+          <span class="ps-threat-label" id="ps-threat-label">Exposure: --%</span>
+          <div class="ps-threat-bar-track-minimal">
+            <div class="ps-threat-bar-fill-minimal level-low" id="ps-threat-bar-fill" style="width: 0%;"></div>
           </div>
-          <label class="ps-always-on-toggle" title="Automatically redacts sensitive info on every page, including as new content loads.">
-            <input type="checkbox" id="ps-always-on-checkbox">
-            <span class="ps-toggle-slider"></span>
-            <span class="ps-toggle-label">Always-On</span>
-          </label>
-          <button class="ps-icon-btn" id="ps-close-btn" title="Close Panel">✕</button>
+        </div>
+        <!-- Status Dots -->
+        <div class="ps-status-dots" id="ps-status-dots">
+          <div class="ps-dot" id="badge-dom" title="DOM Scan"></div>
+          <div class="ps-dot" id="badge-pii" title="PII Redaction"></div>
+          <div class="ps-dot" id="badge-face" title="Face ML"></div>
+          <div class="ps-dot" id="badge-screen" title="Screen Model"></div>
+          <div class="ps-dot" id="badge-ocr" title="OCR Text"></div>
+          <div class="ps-dot" id="badge-vit" title="ViT Model"></div>
+          <div class="ps-scanning-indicator" id="ps-scanning-indicator" style="display:none;">
+            <div class="ps-spinner"></div>
+            <span>Scanning...</span>
+          </div>
         </div>
       </div>
 
-      <!-- Main Body -->
-      <div class="ps-body">
-        <!-- Progress Bar -->
-        <div class="ps-progress-container" id="ps-progress-box">
-          <div class="ps-progress-header">
-            <span id="ps-progress-status">Ready to Scan</span>
-            <span id="ps-progress-percent">0%</span>
-          </div>
-          <div class="ps-progress-track">
-            <div class="ps-progress-fill" id="ps-progress-fill"></div>
-          </div>
-          <div class="ps-stage-badges">
-            <div class="ps-stage-badge" id="badge-dom"><span>•</span> DOM Scan</div>
-            <div class="ps-stage-badge" id="badge-pii"><span>•</span> PII Redaction</div>
-            <div class="ps-stage-badge" id="badge-face"><span>•</span> Face ML</div>
-            <div class="ps-stage-badge" id="badge-screen"><span>•</span> Screen Model</div>
-            <div class="ps-stage-badge" id="badge-ocr"><span>•</span> OCR Text</div>
-            <div class="ps-stage-badge" id="badge-vit"><span>•</span> ViT Model</div>
-          </div>
+      <!-- Bottom Left: Telemetry Drawer -->
+      <div class="ps-telemetry-minimal" id="ps-drawer">
+        <div class="ps-telemetry-header" id="ps-drawer-toggle">
+          <span>⚙ Audit (<span id="ps-total-latency">0 ms</span>)</span>
         </div>
-
-        <!-- Sanitized Stats Grid -->
-        <div class="ps-stats-grid" id="ps-stats-grid" style="display:none;">
-          <div class="ps-stat-card">
-            <div class="ps-stat-value" id="stat-pii-count">0</div>
-            <div class="ps-stat-label">DOM PII</div>
-          </div>
-          <div class="ps-stat-card">
-            <div class="ps-stat-value" id="stat-ocr-count">0</div>
-            <div class="ps-stat-label">OCR PII</div>
-          </div>
-          <div class="ps-stat-card">
-            <div class="ps-stat-value" id="stat-faces-count">0</div>
-            <div class="ps-stat-label">Faces Blurred</div>
-          </div>
-        </div>
-
-        <!-- Redacted Image Preview -->
-        <div class="ps-preview-box" id="ps-preview-box" style="display:none;">
-          <div class="ps-preview-header">
-            <span>Sanitized Screen Preview (Zero PII Leaked)</span>
-            <span style="color:#10b981;font-size:10px;font-weight:700;">● REDACTED</span>
-          </div>
-          <img class="ps-preview-img" id="ps-preview-img" alt="Redacted Screen"/>
-        </div>
-
-        <!-- Task Input Box -->
-        <div class="ps-task-box" id="ps-task-box" style="display:none;">
-          <label class="ps-task-label" for="ps-task-input">What do you want me to do?</label>
-          <div class="ps-input-row">
-            <input type="text" class="ps-task-input" id="ps-task-input" placeholder="e.g., fill this application form, click submit, summarize"/>
-            <button class="ps-go-btn" id="ps-go-btn">
-              <span>Go</span>
-              <svg style="width:14px;height:14px;fill:currentColor;" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            </button>
-          </div>
-        </div>
-
-        <!-- Agent Response / Action Result Card -->
-        <div class="ps-result-card" id="ps-result-card" style="display:none;">
-          <div class="ps-result-header">
-            <span id="ps-result-icon">⚡</span>
-            <span id="ps-result-title">Agent Execution Result</span>
-          </div>
-          <div class="ps-result-content" id="ps-result-content"></div>
-        </div>
-      </div>
-
-      <!-- Telemetry & Decision Drawer (Collapsible) -->
-      <div class="ps-drawer" id="ps-drawer">
-        <div class="ps-drawer-header" id="ps-drawer-toggle">
-          <span>⚙ Telemetry & Decision Audit (<span id="ps-total-latency">0 ms</span>)</span>
-          <span id="ps-drawer-arrow">▼</span>
-        </div>
-        <div class="ps-drawer-body" id="ps-drawer-body" style="display:none;">
-          <div style="margin-bottom:6px;color:#94a3b8;font-size:10px;" id="ps-telemetry-meta">
-            Hardware: <strong id="meta-hw">Detecting...</strong> | Face ML: <strong id="meta-face">BlazeFace</strong>
-          </div>
-          <div style="margin-bottom:6px;color:#94a3b8;font-size:10px;" id="ps-decision-meta">
-            Decision: <strong id="meta-decision" style="color:#38bdf8;">Evaluating...</strong>
-          </div>
+        <div class="ps-telemetry-body" id="ps-drawer-body" style="display:none;">
+          <div id="ps-telemetry-meta">HW: <strong id="meta-hw">...</strong> | Face: <strong id="meta-face">...</strong></div>
+          <div id="ps-decision-meta">Decision: <strong id="meta-decision">...</strong></div>
           <div id="ps-waterfall-container"></div>
         </div>
       </div>
 
-      <!-- Footer Controls -->
-      <div class="ps-footer">
-        <button class="ps-text-btn" id="ps-restore-btn">Recall Page</button>
-        <button class="ps-text-btn" id="ps-rescan-btn">Re-Scan & Redact</button>
+      <!-- Error Toasts Container -->
+      <div id="ps-error-toast-container" class="ps-error-toast-container"></div>
+
+      <!-- Bottom Right: FAB & Task Bar -->
+      <div class="ps-fab-container">
+        
+        <!-- Task Bar (above FAB) -->
+        <div class="ps-task-bar" id="ps-task-box" style="display:none;">
+          <div class="ps-task-bar-input-row">
+            <input type="text" class="ps-task-input-minimal" id="ps-task-input" placeholder="What do you want me to do?"/>
+            <button class="ps-go-btn-minimal" id="ps-go-btn">Go</button>
+            <button class="ps-icon-btn-minimal" id="ps-details-toggle" title="View Redaction Details">ℹ️</button>
+          </div>
+          
+          <div class="ps-task-details-popover" id="ps-task-details" style="display:none;">
+            <div class="ps-stats-grid-minimal" id="ps-stats-grid">
+              <div class="ps-stat-card"><span id="stat-pii-count">0</span> PII</div>
+              <div class="ps-stat-card"><span id="stat-ocr-count">0</span> OCR</div>
+              <div class="ps-stat-card"><span id="stat-faces-count">0</span> Faces</div>
+            </div>
+            <div class="ps-preview-box-minimal" id="ps-preview-box" style="display:none;">
+              <img class="ps-preview-img-minimal" id="ps-preview-img" alt="Redacted Screen"/>
+            </div>
+          </div>
+        </div>
+
+        <!-- Result Toast -->
+        <div class="ps-result-toast" id="ps-result-card" style="display:none;">
+          <div class="ps-result-header">
+            <span id="ps-result-icon">⚡</span>
+            <span id="ps-result-title">Result</span>
+            <button class="ps-icon-btn-minimal" id="ps-result-close" title="Close">✕</button>
+          </div>
+          <div class="ps-result-content" id="ps-result-content"></div>
+        </div>
+
+        <!-- FAB Menu (hidden by default) -->
+        <div class="ps-fab-menu" id="ps-fab-menu">
+          <label class="ps-always-on-toggle" title="Always-On Redaction">
+            <span class="ps-toggle-label">Always-On</span>
+            <input type="checkbox" id="ps-always-on-checkbox">
+            <span class="ps-toggle-slider"></span>
+          </label>
+          <button class="ps-fab-menu-btn" id="ps-rescan-btn" title="Re-Scan & Redact">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          </button>
+          <button class="ps-fab-menu-btn" id="ps-restore-btn" title="Recall Page">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+          </button>
+        </div>
+
+        <button class="ps-fab-button" id="ps-main-fab">
+          ${shieldSvg}
+        </button>
       </div>
     `;
 
-    host.appendChild(panel);
-    host.appendChild(fab);
     document.body.appendChild(host);
 
     // Event Bindings
-    let isDragging = false;
-    let dragStartX, dragStartY;
-    let initialLeft, initialTop;
+    const mainFab = host.querySelector('#ps-main-fab');
+    const fabMenu = host.querySelector('#ps-fab-menu');
+    mainFab.addEventListener('mouseenter', () => fabMenu.classList.add('visible'));
+    host.querySelector('.ps-fab-container').addEventListener('mouseleave', () => fabMenu.classList.remove('visible'));
+    mainFab.addEventListener('click', onOneButtonClick);
 
-    window.positionPrivacyShieldPanel = function() {
-      const fabRect = fab.getBoundingClientRect();
-      const panelHeight = panel.offsetHeight || 400;
-      const panelWidth = panel.offsetWidth || 420;
-      
-      let top = fabRect.top - panelHeight - 16;
-      if (top < 10) {
-        top = fabRect.bottom + 16;
-      }
-      
-      let left = fabRect.right - panelWidth;
-      if (left < 10) {
-        left = 10;
-      }
-      if (left + panelWidth > window.innerWidth) {
-        left = window.innerWidth - panelWidth - 10;
-      }
-      
-      panel.style.top = top + 'px';
-      panel.style.left = left + 'px';
-      panel.style.bottom = 'auto';
-      panel.style.right = 'auto';
-    };
+    host.querySelector('#ps-restore-btn').addEventListener('click', onRestorePage);
+    host.querySelector('#ps-rescan-btn').addEventListener('click', onOneButtonClick);
+    host.querySelector('#ps-drawer-toggle').addEventListener('click', toggleTelemetryDrawer);
 
-    fab.addEventListener('mousedown', (e) => {
-      isDragging = false;
-      dragStartX = e.clientX;
-      dragStartY = e.clientY;
-      
-      const rect = fab.getBoundingClientRect();
-      fab.style.left = rect.left + 'px';
-      fab.style.top = rect.top + 'px';
-      fab.style.bottom = 'auto';
-      fab.style.right = 'auto';
-      
-      initialLeft = rect.left;
-      initialTop = rect.top;
-
-      function onMouseMove(moveEvent) {
-        const dx = moveEvent.clientX - dragStartX;
-        const dy = moveEvent.clientY - dragStartY;
-        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
-          isDragging = true;
-          fab.style.left = (initialLeft + dx) + 'px';
-          fab.style.top = (initialTop + dy) + 'px';
-          
-          if (panel.style.display !== 'none') {
-            window.positionPrivacyShieldPanel();
-          }
-        }
-      }
-
-      function onMouseUp(upEvent) {
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
-        if (!isDragging) {
-          onOneButtonClick();
-        }
-      }
-
-      document.addEventListener('mousemove', onMouseMove);
-      document.addEventListener('mouseup', onMouseUp);
-    });
-    panel.querySelector('#ps-close-btn').addEventListener('click', () => panel.style.display = 'none');
-    panel.querySelector('#ps-restore-btn').addEventListener('click', onRestorePage);
-    panel.querySelector('#ps-rescan-btn').addEventListener('click', onOneButtonClick);
-    panel.querySelector('#ps-drawer-toggle').addEventListener('click', toggleTelemetryDrawer);
-
-    const taskInput = panel.querySelector('#ps-task-input');
-    const goBtn = panel.querySelector('#ps-go-btn');
+    const taskInput = host.querySelector('#ps-task-input');
+    const goBtn = host.querySelector('#ps-go-btn');
+    const detailsToggle = host.querySelector('#ps-details-toggle');
+    const taskDetails = host.querySelector('#ps-task-details');
+    const resultClose = host.querySelector('#ps-result-close');
+    const resultCard = host.querySelector('#ps-result-card');
 
     goBtn.addEventListener('click', onTaskSubmit);
     taskInput.addEventListener('keydown', (e) => {
@@ -283,7 +192,15 @@
       }
     });
 
-    const alwaysOnCheckbox = panel.querySelector('#ps-always-on-checkbox');
+    detailsToggle.addEventListener('click', () => {
+      taskDetails.style.display = taskDetails.style.display === 'none' ? 'block' : 'none';
+    });
+
+    resultClose.addEventListener('click', () => {
+      resultCard.style.display = 'none';
+    });
+
+    const alwaysOnCheckbox = host.querySelector('#ps-always-on-checkbox');
     if (alwaysOnCheckbox) {
       alwaysOnCheckbox.addEventListener('change', (e) => {
         alwaysOnEnabled = e.target.checked;
@@ -333,40 +250,48 @@
    * Updates progress bar and active stage badge.
    */
   function updateProgress(percent, label, activeBadgeId) {
-    const statusEl = document.getElementById('ps-progress-status');
-    const percentEl = document.getElementById('ps-progress-percent');
-    const fillEl = document.getElementById('ps-progress-fill');
-
-    if (statusEl) statusEl.textContent = label;
-    if (percentEl) percentEl.textContent = `${percent}%`;
-    if (fillEl) fillEl.style.width = `${percent}%`;
+    const indicator = document.getElementById('ps-scanning-indicator');
+    if (indicator) {
+      if (percent > 0 && percent < 100) {
+        indicator.style.display = 'flex';
+        indicator.querySelector('span').textContent = label;
+      } else {
+        indicator.style.display = 'none';
+      }
+    }
 
     const badges = ['badge-dom', 'badge-pii', 'badge-face', 'badge-screen', 'badge-ocr', 'badge-vit'];
     badges.forEach(id => {
       const el = document.getElementById(id);
       if (!el) return;
       if (id === activeBadgeId) {
-        el.className = 'ps-stage-badge active';
+        el.className = 'ps-dot active';
       } else if (badges.indexOf(id) < badges.indexOf(activeBadgeId)) {
-        el.className = 'ps-stage-badge done';
+        el.className = 'ps-dot done';
       }
     });
   }
 
-  /**
-   * The One-Button Flow Trigger:
-   * Single click scans visible DOM + takes screenshot + runs local PII + runs BlazeFace + runs screen model + redacts DOM & pixels + runs Screen ViT vision model.
-   */
+  // Helper for Error Toast
+  function showErrorToast(msg) {
+    const container = document.getElementById('ps-error-toast-container');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = 'ps-error-toast';
+    toast.innerHTML = `<span>${msg}</span><button class="ps-toast-close">✕</button>`;
+    toast.querySelector('button').onclick = () => toast.remove();
+    container.appendChild(toast);
+    setTimeout(() => { if (toast.parentNode) toast.remove(); }, 5000);
+  }
+
   async function onOneButtonClick() {
     if (pipelineState.isScanning) return;
     pipelineState.isScanning = true;
     stopDynamicFaceScanner();
 
-    const panel = document.getElementById('ps-panel');
-    const fab = document.querySelector('.ps-fab-button');
-    panel.style.display = 'flex';
-    fab.classList.add('ps-active');
-    if (window.positionPrivacyShieldPanel) window.positionPrivacyShieldPanel();
+    
+    
+    
 
     // Reset view states
     document.getElementById('ps-stats-grid').style.display = 'none';
@@ -397,9 +322,9 @@
         
         // --- LIVE DOM FACE OVERLAY REDACTION ---
         const injectedOverlaysCount = domRedactor.redactDOMFaces(detectedFaces);
-        console.log(`[PrivacyShield] Injected ${injectedOverlaysCount} live DOM face redaction overlays.`);
+        console.log(`[Phantom AI] Injected ${injectedOverlaysCount} live DOM face redaction overlays.`);
       } catch (faceErr) {
-        console.warn('[PrivacyShield] Face detection failed gracefully:', faceErr);
+        console.warn('[Phantom AI] Face detection failed gracefully:', faceErr);
       }
       instrumentation.endStage('local_face_detection', { facesCount: detectedFaces.length, backend: faceStatus.activeBackend });
 
@@ -531,7 +456,7 @@
           pipelineState.threatScore = threatResult;
           updateThreatIndicatorUI(threatResult);
         } catch (threatErr) {
-          console.warn('[PrivacyShield] Could not compute threat score:', threatErr);
+          console.warn('[Phantom AI] Could not compute threat score:', threatErr);
         }
       }
 
@@ -554,11 +479,11 @@
       pipelineState.isRedacted = true;
       startDynamicFaceScanner();
     } catch (err) {
-      console.error('[PrivacyShield] Error in pipeline execution:', err);
-      updateProgress(0, `Error: ${err.message}`, 'badge-dom');
+      console.error('[Phantom AI] Error in pipeline execution:', err);
+      showErrorToast(`Error: ${err.message}`);
     } finally {
       pipelineState.isScanning = false;
-      fab.classList.remove('ps-active');
+      
     }
   }
 
@@ -665,14 +590,14 @@
       }
 
       const agentData = response.data;
-      console.log('[PrivacyShield] Agent Response:', agentData);
+      console.log('[Phantom AI] Agent Response:', agentData);
 
       // 4. Handle Server Response (Action vs Text Response)
       if (agentData.type === 'action' && Array.isArray(agentData.actions)) {
         // Enforce safety: never allow submission actions in the plan
         const safeActions = agentData.actions.filter(a => {
           if (a.type === 'click' && a.selector && a.selector.toLowerCase().includes('submit')) {
-            console.log('[PrivacyShield] Filtered out autonomous submit click.');
+            console.log('[Phantom AI] Filtered out autonomous submit click.');
             return false;
           }
           return true;
@@ -685,7 +610,7 @@
             actionExecutor.setProfile(profileData.mockProfile);
           }
         } catch (e) {
-          console.warn('[PrivacyShield] Could not read mockProfile from storage in content.js:', e);
+          console.warn('[Phantom AI] Could not read mockProfile from storage in content.js:', e);
         }
 
         resultTitle.textContent = `Autonomous Actions (${safeActions.length})`;
@@ -714,7 +639,7 @@
       const completedSession = instrumentation.endSession();
       renderTelemetryUI(completedSession, faceDetector.getStatus(), decision);
     } catch (err) {
-      console.error('[PrivacyShield] Task submission error:', err);
+      console.error('[Phantom AI] Task submission error:', err);
       resultTitle.textContent = 'Error';
       resultContent.innerHTML = `
         <div style="color:#ef4444;">${err.message}</div>
@@ -759,7 +684,7 @@
       if (faceBoxes && faceBoxes.length > 0 && pipelineState.isRedacted) {
         const injected = domRedactor.redactDOMFaces(faceBoxes);
         if (injected > 0) {
-          console.log(`[PrivacyShield Dynamic Scan] Redacted ${injected} faces on dynamic thumbnail.`);
+          console.log(`[Phantom AI Dynamic Scan] Redacted ${injected} faces on dynamic thumbnail.`);
           const statFaces = document.getElementById('stat-faces-count');
           if (statFaces) {
             statFaces.textContent = parseInt(statFaces.textContent || '0', 10) + injected;
@@ -931,11 +856,13 @@
     if (cb) cb.checked = false;
 
     // Shut off extension panel
-    document.getElementById('ps-panel').style.display = 'none';
+    
     
     // Reset FAB active state
     const fab = document.querySelector('.ps-fab-button');
-    if (fab) fab.classList.remove('ps-active');
+    if (fab) {
+      fab.classList.remove('ps-active');
+    }
   }
 
   // Initialize UI on load

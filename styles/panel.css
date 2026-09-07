@@ -388,6 +388,10 @@ h1, h2, h3, h4, h5, h6, strong, label, .ps-threat-label, .ps-toggle-label, .ps-r
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
 }
 .ps-icon-btn-minimal {
   background: transparent;

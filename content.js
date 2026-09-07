@@ -118,7 +118,7 @@
         <div class="ps-task-bar" id="ps-task-box" style="display:none;">
           <div class="ps-task-bar-input-row">
             <input type="text" class="ps-task-input-minimal" id="ps-task-input" placeholder="What do you want me to do?"/>
-            <button class="ps-go-btn-minimal" id="ps-go-btn">Go</button>
+            <button class="ps-go-btn-minimal" id="ps-go-btn"><span>Go</span> <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
             <button class="ps-icon-btn-minimal" id="ps-details-toggle" style="border-radius: 50%; width: 26px; height: 26px; padding: 0;" title="View Redaction Details">
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
             </button>
@@ -806,7 +806,7 @@
       `;
     } finally {
       goBtn.disabled = false;
-      goBtn.innerHTML = `<span>Go</span> <svg style="width:14px;height:14px;fill:currentColor;" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`;
+      goBtn.innerHTML = `<span>Go</span> <svg style="width:14px;height:14px;" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`;
     }
   }
 
@@ -1001,6 +1001,14 @@
   function onRestorePage() {
     stopDynamicFaceScanner();
     domRedactor.restorePageDOM();
+    if (actionExecutor && typeof actionExecutor.restoreFilledInputs === 'function') {
+      actionExecutor.restoreFilledInputs();
+    }
+    
+    // Hide FAB Menu when recall is clicked
+    const fabMenu = document.getElementById('ps-fab-menu');
+    if (fabMenu) fabMenu.classList.remove('visible');
+
     pipelineState.isRedacted = false;
     updateProgress(0, 'Page Restored to Original', 'badge-dom');
     document.getElementById('ps-stats-grid').style.display = 'none';

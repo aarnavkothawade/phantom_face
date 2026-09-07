@@ -337,7 +337,9 @@
     if (alwaysOnCheckbox) {
       alwaysOnCheckbox.addEventListener('change', (e) => {
         alwaysOnEnabled = e.target.checked;
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
         chrome.storage.local.set({ alwaysOnRedaction: alwaysOnEnabled });
+      }
         if (alwaysOnEnabled) {
           runAutoRedaction(document.body, false);
           if (!dynamicFaceObserver) startDynamicFaceScanner();
@@ -357,17 +359,19 @@
   }
 
   function initializeAlwaysOn() {
-    chrome.storage.local.get(['alwaysOnRedaction'], (res) => {
-      if (res.alwaysOnRedaction) {
-        alwaysOnEnabled = true;
-        const cb = document.getElementById('ps-always-on-checkbox');
-        if (cb) cb.checked = true;
-        runAutoRedaction(document.body, false);
-        if (!dynamicFaceObserver) {
-          startDynamicFaceScanner();
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      chrome.storage.local.get(['alwaysOnRedaction'], (res) => {
+        if (res && res.alwaysOnRedaction) {
+          alwaysOnEnabled = true;
+          const cb = document.getElementById('ps-always-on-checkbox');
+          if (cb) cb.checked = true;
+          runAutoRedaction(document.body, false);
+          if (!dynamicFaceObserver) {
+            startDynamicFaceScanner();
+          }
         }
-      }
-    });
+      });
+    }
   }
 
   /**
@@ -761,13 +765,11 @@
         });
 
         // Pull latest local profile from chrome.storage
-        try {
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
           const profileData = await chrome.storage.local.get(['mockProfile']);
-          if (profileData && profileData.mockProfile) {
+          if (profileData && profileData.mockProfile && actionExecutor) {
             actionExecutor.setProfile(profileData.mockProfile);
           }
-        } catch (e) {
-          console.warn('[Phantom AI] Could not read mockProfile from storage in content.js:', e);
         }
 
         resultTitle.textContent = `Autonomous Actions (${safeActions.length})`;
@@ -1025,7 +1027,9 @@
 
     // Shut off always-on redaction
     alwaysOnEnabled = false;
-    chrome.storage.local.set({ alwaysOnRedaction: false });
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      chrome.storage.local.set({ alwaysOnRedaction: false });
+    }
     const cb = document.getElementById('ps-always-on-checkbox');
     if (cb) cb.checked = false;
 

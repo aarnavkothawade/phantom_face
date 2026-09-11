@@ -2,6 +2,37 @@
    PrivacyShield — Manual Select-to-Redact Scoped Styles (.ps-mr-*)
    Purely isolated styles with zero overrides on existing extension buttons.
    ========================================================================== */
+/* In-Page Floating FAB Menu Button (#ps-mr-select-btn) */
+#ps-mr-select-btn.ps-fab-menu-btn {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
+  background: #FAF9F5 !important;
+  border: 1px solid #E5E3DD !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05) !important;
+  transition: background 0.15s ease !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  outline: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+#ps-mr-select-btn.ps-fab-menu-btn:hover {
+  background: #E5E3DD !important;
+}
+
+#ps-mr-select-btn.ps-fab-menu-btn svg {
+  width: 16px !important;
+  height: 16px !important;
+  stroke: #6E6D6A !important;
+  display: block !important;
+}
 
 /* Secondary Hook: "Manually redact more" button */
 .ps-mr-btn-more {

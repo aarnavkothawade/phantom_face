@@ -72,6 +72,9 @@
   backdrop-filter: blur(2px) !important;
   cursor: crosshair !important;
   user-select: none !important;
+  -webkit-user-select: none !important;
+  pointer-events: auto !important;
+  touch-action: none !important;
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
@@ -87,6 +90,9 @@
   height: 100vh !important;
   object-fit: fill !important;
   pointer-events: none !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -webkit-user-drag: none !important;
 }
 
 /* Floating top instruction bar */
@@ -124,10 +130,11 @@
 .ps-mr-active-rect {
   position: absolute !important;
   border: 2px dashed #38BDF8 !important;
-  background: rgba(56, 189, 248, 0.2) !important;
+  background: rgba(56, 189, 248, 0.25) !important;
   pointer-events: none !important;
   box-sizing: border-box !important;
   z-index: 5 !important;
+  border-radius: 2px !important;
 }
 
 /* Committed Selection Region Box */
@@ -137,7 +144,8 @@
   background: rgba(14, 165, 233, 0.22) !important;
   box-sizing: border-box !important;
   z-index: 6 !important;
-  cursor: default !important;
+  pointer-events: none !important;
+  cursor: crosshair !important;
   transition: border-color 0.15s ease, background 0.15s ease !important;
 }
 

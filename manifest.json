@@ -54,11 +54,13 @@
         "lib/redactor/canvas-redactor.js",
         "lib/executor/action-executor.js",
         "lib/telemetry/instrumentation.js",
-        "content.js"
+        "content.js",
+        "lib/redactor/manual-redact.js"
       ],
       "css": [
         "styles/floating-shield.css",
-        "styles/panel.css"
+        "styles/panel.css",
+        "styles/manual-redact.css"
       ],
       "run_at": "document_idle"
     }

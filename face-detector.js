@@ -256,13 +256,18 @@
       const height = canvas.height;
       if (width < 32 || height < 32) return [];
 
+      // Only run heuristic face detection on reasonable avatar/portrait images
+      // A human face/portrait is never a 1000px banner or full-page screenshot
+      const aspect = height / width;
+      const isPortraitAspect = aspect >= 0.65 && aspect <= 1.6;
+      if (!isPortraitAspect || width > 650 || height > 650) {
+        return [];
+      }
+
       let imgData;
       try { imgData = ctx.getImageData(0, 0, width, height); }
       catch (_) { return []; }
       const data = imgData.data;
-
-      const aspect = height / width;
-      const isPortraitAspect = aspect >= 0.65 && aspect <= 1.5;
 
       const gridCols = 8, gridRows = 8;
       const cellW = width / gridCols;
@@ -304,13 +309,16 @@
         }
       }
 
-      if (activeCells >= 3 && maxR >= minR && maxC >= minC) {
+      // Require meaningful skin tone cluster (at least 8 active cells)
+      if (activeCells >= 8 && maxR >= minR && maxC >= minC) {
         const fx = Math.round(minC * cellW);
         const fy = Math.round(minR * cellH);
         const fw = Math.round((maxC - minC + 1) * cellW);
         const fh = Math.round((maxR - minR + 1) * cellH);
 
-        if (fw >= width * 0.20 && fh >= height * 0.20) {
+        const boxAspect = fh / fw;
+        // Verify candidate box is facial in proportion (not a wide horizontal strip)
+        if (fw >= width * 0.20 && fh >= height * 0.20 && fw <= 450 && fh <= 450 && boxAspect >= 0.7 && boxAspect <= 1.6) {
           return [{
             x: fx, y: fy,
             width: fw, height: fh,
@@ -321,7 +329,7 @@
       }
 
       // Default biometric portrait face crop for avatar/headshot images
-      if (isPortraitAspect && width >= 64 && height >= 64) {
+      if (isPortraitAspect && width >= 64 && height >= 64 && width <= 450 && height <= 450) {
         return [{
           x: Math.round(width * 0.18),
           y: Math.round(height * 0.10),
@@ -430,10 +438,24 @@
      * in VIEWPORT coordinate space for DOM overlay positioning.
      */
     async scanSingleImage(img) {
-      if (!img || img.closest('#privacyshield-root')) return [];
+      if (!img) return [];
+      if (img.closest && (
+        img.closest('#privacyshield-root') ||
+        img.closest('#ps-mr-overlay') ||
+        img.closest('#ps-mr-preview-modal') ||
+        img.closest('.ps-mr-modal-backdrop') ||
+        img.closest('[data-ps-ignore="true"]')
+      )) return [];
+
+      if (img.hasAttribute && img.hasAttribute('data-ps-ignore')) return [];
+      if (img.classList && (img.classList.contains('ps-mr-screenshot') || img.classList.contains('ps-mr-preview-img'))) return [];
 
       const rect = img.getBoundingClientRect();
       if (rect.width < 32 || rect.height < 32) return [];
+      // Skip wide banners, dividers, and full-screen backgrounds — they are never portrait faces
+      if (rect.width > 600 && (rect.width / rect.height > 1.8)) return [];
+      if (rect.height > 600 && (rect.height / rect.width > 2.2)) return [];
+
       if (img.tagName && img.tagName.toLowerCase() === 'img') {
         if (!img.complete || img.naturalWidth === 0) return [];
       }
@@ -483,13 +505,19 @@
         const finalRight = Math.min(rect.left + rect.width, vpX + vpW);
         const finalBottom = Math.min(rect.top + rect.height, vpY + vpH);
 
-        if (finalRight - finalX < 4 || finalBottom - finalY < 4) continue;
+        const faceW = Math.round(finalRight - finalX);
+        const faceH = Math.round(finalBottom - finalY);
+
+        if (faceW < 4 || faceH < 4) continue;
+        // Guardrail: A face overlay should never stretch across the whole screen or banner
+        if (faceW > 450 || faceH > 500 || faceW > (window.innerWidth * 0.55)) continue;
+        if (faceW / faceH > 2.0) continue;
 
         viewportFaces.push({
           x: Math.round(finalX),
           y: Math.round(finalY),
-          width: Math.round(finalRight - finalX),
-          height: Math.round(finalBottom - finalY),
+          width: faceW,
+          height: faceH,
           borderRadius: '8px',
           confidence: f.confidence,
           isHeuristic: f.isHeuristic || false
@@ -513,11 +541,24 @@
       const processed = new Set();
 
       for (const img of elements) {
-        if (img.closest('#privacyshield-root') || processed.has(img)) continue;
+        if (img.closest && (
+          img.closest('#privacyshield-root') ||
+          img.closest('#ps-mr-overlay') ||
+          img.closest('#ps-mr-preview-modal') ||
+          img.closest('.ps-mr-modal-backdrop') ||
+          img.closest('[data-ps-ignore="true"]')
+        )) continue;
+
+        if (img.hasAttribute && img.hasAttribute('data-ps-ignore')) continue;
+        if (img.classList && (img.classList.contains('ps-mr-screenshot') || img.classList.contains('ps-mr-preview-img'))) continue;
+        if (processed.has(img)) continue;
         processed.add(img);
 
         const rect = img.getBoundingClientRect();
         if (rect.width < 48 || rect.height < 48) { skippedTooSmall++; continue; }
+        // Skip wide banners, document backgrounds, or horizontal dividers
+        if (rect.width > 600 && (rect.width / rect.height > 1.8)) continue;
+        if (rect.height > 600 && (rect.height / rect.width > 2.2)) continue;
         if (!img.complete || img.naturalWidth === 0) { skippedNotLoaded++; continue; }
 
         scannedCount++;

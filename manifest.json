@@ -71,6 +71,7 @@
         "lib/pii/ner-worker.js",
         "lib/vision/vision-worker.js",
         "lib/vision/tesseract/*",
+        "lib/vision/model/*",
         "icons/*",
         "styles/*"
       ],

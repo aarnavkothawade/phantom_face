@@ -857,10 +857,21 @@
 
   function handleCandidateImage(img) {
     if (!pipelineState.isRedacted || !img || dynamicallyScannedImages.has(img)) return;
-    if (img.closest && img.closest('#privacyshield-root')) return;
+    if (img.closest && (
+      img.closest('#privacyshield-root') ||
+      img.closest('#ps-mr-overlay') ||
+      img.closest('#ps-mr-preview-modal') ||
+      img.closest('.ps-mr-modal-backdrop') ||
+      img.closest('[data-ps-ignore="true"]')
+    )) return;
+
+    if (img.hasAttribute && img.hasAttribute('data-ps-ignore')) return;
+    if (img.classList && (img.classList.contains('ps-mr-screenshot') || img.classList.contains('ps-mr-preview-img') || img.classList.contains('ps-scanned'))) return;
 
     const rect = img.getBoundingClientRect();
     if (rect.width < 32 || rect.height < 32) return;
+    if (rect.width > 600 && (rect.width / rect.height > 1.8)) return;
+    if (rect.height > 600 && (rect.height / rect.width > 2.2)) return;
 
     if (img.tagName && img.tagName.toLowerCase() === 'img') {
       if (!img.complete || img.naturalWidth === 0) {
@@ -909,7 +920,17 @@
       for (const mutation of mutations) {
         for (const node of mutation.addedNodes) {
           if (node.nodeType !== Node.ELEMENT_NODE) continue;
-          if (node.id === 'privacyshield-root' || (node.closest && node.closest('#privacyshield-root'))) continue;
+          if (node.id === 'privacyshield-root' || 
+              node.id === 'ps-mr-overlay' || 
+              node.id === 'ps-mr-preview-modal' ||
+              (node.hasAttribute && node.hasAttribute('data-ps-ignore')) ||
+              (node.closest && (
+                node.closest('#privacyshield-root') || 
+                node.closest('#ps-mr-overlay') || 
+                node.closest('#ps-mr-preview-modal') || 
+                node.closest('.ps-mr-modal-backdrop') ||
+                node.closest('[data-ps-ignore="true"]')
+              ))) continue;
 
           if (alwaysOnEnabled) {
             const tag = node.tagName.toLowerCase();

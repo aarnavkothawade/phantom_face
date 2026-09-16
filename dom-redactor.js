@@ -196,13 +196,13 @@
           wrapper.appendChild(fragment);
           parent.replaceChild(wrapper, textNode);
 
-          // Record bounding rect of the redacted region for canvas synchronization
-          const parentRect = parent.getBoundingClientRect();
+          // Record precise bounding rect of the redacted wrapper for canvas synchronization
+          const wrapperRect = wrapper.getBoundingClientRect();
           this.redactedNodeRects.push({
-            x: Math.round(parentRect.left + window.scrollX),
-            y: Math.round(parentRect.top + window.scrollY),
-            width: Math.round(parentRect.width),
-            height: Math.round(parentRect.height),
+            x: Math.round(wrapperRect.left + window.scrollX),
+            y: Math.round(wrapperRect.top + window.scrollY),
+            width: Math.round(wrapperRect.width),
+            height: Math.round(wrapperRect.height),
             tokens: result.detectedSpans.map(s => s.token)
           });
         }
@@ -231,6 +231,12 @@
       let count = 0;
       for (const face of faceBoxes) {
         if (!face.width || !face.height || face.width < 4 || face.height < 4) continue;
+
+        // Safety guard: A face overlay must never cover huge areas of the screen or table
+        const maxAllowedW = Math.min(window.innerWidth * 0.55, 450);
+        const maxAllowedH = Math.min(window.innerHeight * 0.55, 500);
+        if (face.width > maxAllowedW || face.height > maxAllowedH) continue;
+        if (face.width / face.height > 2.0) continue;
 
         const overlay = document.createElement('div');
         overlay.className = 'ps-face-overlay ps-injected';

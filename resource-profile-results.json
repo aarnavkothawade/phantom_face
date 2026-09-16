@@ -1,0 +1,50 @@
+{
+  "timestamp": "2026-09-16T18:04:12.714Z",
+  "baselineHeapMB": "5.00 MB",
+  "finalHeapMB": "5.90 MB",
+  "totalHeapDeltaMB": "0.90 MB",
+  "stages": {
+    "pii_scan": {
+      "stage": "1. Text PII Scan & NER",
+      "runtime": "Local CPU (V8 Regex + Checksum Units)",
+      "durationMs": 0.888,
+      "memBefore": 5245136,
+      "memAfter": 5311264,
+      "heapDeltaBytes": 66128,
+      "heapDeltaMB": "0.06 MB"
+    },
+    "face_detection": {
+      "stage": "2. Local Face Detector",
+      "runtime": "WebGL / WASM (with Heuristic Fallback)",
+      "durationMs": 18.202,
+      "memBefore": 5315088,
+      "memAfter": 5760720,
+      "heapDeltaBytes": 445632,
+      "heapDeltaMB": "0.42 MB"
+    },
+    "vit_classification": {
+      "stage": "3. ScreenViT Visual Model",
+      "runtime": "WASM (WebAssembly SIMD)",
+      "durationMs": 18.949,
+      "memBefore": 5761496,
+      "memAfter": 6164872,
+      "heapDeltaBytes": 403376,
+      "heapDeltaMB": "0.38 MB"
+    },
+    "dom_redaction": {
+      "stage": "4. DOM & Canvas Redaction",
+      "runtime": "DOM Mutation Engine + 2D Canvas",
+      "durationMs": 0.243,
+      "memBefore": 6165600,
+      "memAfter": 6185328,
+      "heapDeltaBytes": 19728,
+      "heapDeltaMB": "0.02 MB"
+    }
+  },
+  "extensionFootprint": {
+    "activeMemoryEstimate": "5.90 MB",
+    "idleMemoryEstimate": "5.00 MB",
+    "maxMemoryCeiling": "35.0 MB (Chromium Extension Sandbox Bound)",
+    "conformanceStatus": "PASS (Exceeds ISRO SIH < 50MB Resource Target)"
+  }
+}

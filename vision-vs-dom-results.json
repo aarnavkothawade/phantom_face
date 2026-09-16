@@ -1,0 +1,62 @@
+[
+  {
+    "testCase": "Canvas-Rendered Financial Sheet",
+    "scenario": "Spreadsheet rendering cells directly via HTML5 Canvas (0 DOM text nodes)",
+    "domOnly": {
+      "piiDetected": "0 PII (MISSED)",
+      "layoutUnderstood": "Failed (0 semantic tags)",
+      "latencyMs": 0.01
+    },
+    "vitAssisted": {
+      "piiDetected": "Protected (OCR/Visual Mask)",
+      "layoutUnderstood": "Identified [data_table]",
+      "marginalAdvantage": "ViT identifies canvas data_table; triggers pixel OCR masking where DOM finds 0 text nodes.",
+      "latencyMs": 13.88
+    }
+  },
+  {
+    "testCase": "Scanned Government Identity Card",
+    "scenario": "Scanned image attachment of Aadhaar card with no alt text or accessibility labels",
+    "domOnly": {
+      "piiDetected": "0 PII (MISSED)",
+      "layoutUnderstood": "Failed (0 semantic tags)",
+      "latencyMs": 0.01
+    },
+    "vitAssisted": {
+      "piiDetected": "Protected (OCR/Visual Mask)",
+      "layoutUnderstood": "Identified [document_reader]",
+      "marginalAdvantage": "Classifies image as document_reader; triggers biometric face blur & OCR masking on raw pixels.",
+      "latencyMs": 2.18
+    }
+  },
+  {
+    "testCase": "Icon-Only Action Button",
+    "scenario": "Submit/Delete button with custom SVG path and no text node or aria-label",
+    "domOnly": {
+      "piiDetected": "0 PII (MISSED)",
+      "layoutUnderstood": "Partial (DOM tags only)",
+      "latencyMs": 0
+    },
+    "vitAssisted": {
+      "piiDetected": "Protected (OCR/Visual Mask)",
+      "layoutUnderstood": "Identified [interactive_form]",
+      "marginalAdvantage": "Visual bounding box detects clickable button geometry despite missing text/aria labels.",
+      "latencyMs": 2.11
+    }
+  },
+  {
+    "testCase": "Visually Occluded Form Input",
+    "scenario": "Input field physically covered by a floating cookie/privacy modal rendered at body root",
+    "domOnly": {
+      "piiDetected": "Found",
+      "layoutUnderstood": "Partial (DOM tags only)",
+      "latencyMs": 8.17
+    },
+    "vitAssisted": {
+      "piiDetected": "Protected (OCR/Visual Mask)",
+      "layoutUnderstood": "Identified [interactive_form]",
+      "marginalAdvantage": "Detects top-layer occlusion; prevents agent from clicking hidden inputs behind modal.",
+      "latencyMs": 9.8
+    }
+  }
+]
